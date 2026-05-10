@@ -1,621 +1,99 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Myat Digital Shop</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Referral System</title>
 
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
 
-    <link rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<style>
+body{
+    margin:0;
+    font-family:Arial;
+    background:#0f172a;
+    color:white;
+}
 
-    <style>
-        :root {
-            --primary: #0088cc;
-            --gold: #ffd700;
-            --silver: #c0c0c0;
-            --bronze: #cd7f32;
-            --bg-dark: #020203;
-        }
+.header{
+    text-align:center;
+    padding:18px;
+    background:#111827;
+    font-weight:bold;
+    font-size:18px;
+}
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+.card{
+    margin:12px;
+    padding:14px;
+    background:#1e293b;
+    border-radius:12px;
+}
 
-        body {
-            background: var(--bg-dark);
-            color: #fff;
-            font-family: -apple-system, system-ui, sans-serif;
-            overflow-x: hidden;
-            min-height: 100vh;
-            -webkit-tap-highlight-color: transparent;
-        }
+.btn{
+    width:100%;
+    padding:12px;
+    margin-top:10px;
+    border:none;
+    border-radius:10px;
+    background:#3b82f6;
+    color:white;
+    font-weight:bold;
+}
 
-        .bg-glow {
-            position: fixed;
-            inset: 0;
-            background:
-                radial-gradient(circle at 10% 20%, rgba(0,136,204,0.15) 0%, transparent 40%),
-                radial-gradient(circle at 90% 80%, rgba(255,215,0,0.08) 0%, transparent 40%);
-            z-index: -2;
-        }
+.btn:active{transform:scale(0.98);}
 
-        .bg-animate {
-            position: fixed;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background:
-                conic-gradient(from 0deg at 50% 50%,
-                    transparent 0%,
-                    rgba(0,136,204,0.05) 25%,
-                    transparent 50%,
-                    rgba(255,215,0,0.03) 75%,
-                    transparent 100%);
-            animation: rotateBg 20s linear infinite;
-            z-index: -1;
-            filter: blur(60px);
-        }
+.box{
+    background:#0b1220;
+    padding:10px;
+    border-radius:10px;
+    font-size:13px;
+    word-break:break-all;
+}
 
-        @keyframes rotateBg {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
+.row{
+    display:flex;
+    justify-content:space-between;
+    margin-top:10px;
+}
 
-        .page {
-            display: none;
-            flex-direction: column;
-            align-items: center;
-            padding: 20px;
-            padding-bottom: 120px;
-            min-height: 100vh;
-        }
-
-        .active-page {
-            display: flex;
-        }
-
-        .premium-card {
-            width: 100%;
-            background: rgba(255,255,255,0.04);
-            border: 1px solid rgba(255,255,255,0.08);
-            border-radius: 28px;
-            padding: 25px;
-            backdrop-filter: blur(25px);
-        }
-
-        .features-grid {
-            width: 100%;
-            display: grid;
-            grid-template-columns: repeat(2,1fr);
-            gap: 12px;
-            margin-top: 20px;
-        }
-
-        .feature-box {
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.05);
-            border-radius: 20px;
-            padding: 15px;
-            text-align: center;
-        }
-
-        .feature-box i {
-            color: var(--gold);
-            font-size: 20px;
-            margin-bottom: 8px;
-        }
-
-        .feature-box span {
-            display: block;
-            font-weight: bold;
-            font-size: 13px;
-            margin-bottom: 5px;
-        }
-
-        .feature-box small {
-            opacity: 0.6;
-            font-size: 11px;
-        }
-
-        .btn-main {
-            width: 100%;
-            padding: 15px;
-            border-radius: 18px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            margin-top: 15px;
-            text-decoration: none;
-            font-weight: bold;
-        }
-
-        .btn-blue {
-            background: linear-gradient(135deg,#0088cc,#005580);
-            color: white;
-            border: none;
-        }
-
-        .btn-outline {
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.15);
-            color: white;
-        }
-
-        .item-card {
-            width: 100%;
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.06);
-            border-radius: 22px;
-            padding: 18px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 14px;
-        }
-
-        .icon-box-premium {
-            width: 48px;
-            height: 48px;
-            border-radius: 15px;
-            background: rgba(255,255,255,0.08);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--gold);
-            margin-right: 14px;
-        }
-
-        .claim-btn {
-            border: none;
-            background: white;
-            color: black;
-            font-weight: bold;
-            padding: 12px 22px;
-            border-radius: 16px;
-        }
-
-        .balance-card {
-            width: 100%;
-            background: linear-gradient(135deg,#0088cc,#004466);
-            border-radius: 30px;
-            padding: 30px;
-            text-align: center;
-            margin-bottom: 25px;
-        }
-
-        .season-box {
-            width: 100%;
-            padding: 16px;
-            border-radius: 20px;
-            margin-bottom: 20px;
-            background: rgba(255,215,0,0.04);
-            border: 1px solid rgba(255,215,0,0.2);
-            text-align: center;
-        }
-
-        #countdown {
-            margin-top: 10px;
-            color: var(--gold);
-            font-weight: bold;
-            font-size: 18px;
-        }
-
-        .leaderboard-list {
-            width: 100%;
-        }
-
-        .rank-item {
-            width: 100%;
-            padding: 14px 18px;
-            border-radius: 18px;
-            margin-bottom: 10px;
-            background: rgba(255,255,255,0.04);
-            border: 1px solid rgba(255,255,255,0.06);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .rank-info {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-        }
-
-        .rank-number {
-            width: 20px;
-        }
-
-        .rank-points {
-            color: var(--gold);
-            font-weight: bold;
-        }
-
-        .bottom-nav {
-            position: fixed;
-            left: 10px;
-            right: 10px;
-            bottom: 15px;
-            height: 72px;
-            background: rgba(15,15,20,0.85);
-            border: 1px solid rgba(255,255,255,0.08);
-            border-radius: 25px;
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            backdrop-filter: blur(25px);
-            z-index: 1000;
-        }
-
-        .nav-item {
-            flex: 1;
-            color: #777;
-            text-decoration: none;
-            font-size: 10px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        .nav-item i {
-            font-size: 20px;
-            margin-bottom: 4px;
-        }
-
-        .nav-item.active {
-            color: white;
-        }
-
-        .nav-item.active i {
-            color: var(--primary);
-        }
-    </style>
+.small{font-size:13px;opacity:0.8;}
+</style>
 </head>
+
 <body>
 
-<div class="bg-glow"></div>
-<div class="bg-animate"></div>
+<div class="header">💎 Referral System</div>
 
-<!-- HOME -->
-<div id="home" class="page active-page">
+<div class="card">
+    <div class="small">👤 User</div>
+    <div id="userId">Loading...</div>
 
-    <div class="premium-card" style="margin-top:60px; text-align:center;">
-
-        <i class="fas fa-rocket fa-5x"
-            style="color:var(--gold); margin-bottom:20px;"></i>
-
-        <h1 style="font-size:32px;">Myat Digital Shop</h1>
-
-        <p style="opacity:0.6; margin:10px 0 25px;">
-            Premium Digital Services
-        </p>
-
-        <a href="https://t.me/myat_2055G"
-            class="btn-main btn-blue">
-            <i class="fab fa-telegram"></i>
-            Join Community
-        </a>
-
-        <a href="https://t.me/ko_luchaww"
-            class="btn-main btn-outline">
-            <i class="fas fa-headset"></i>
-            Contact Support
-        </a>
-
+    <div class="row">
+        <div>
+            <div class="small">💰 Balance</div>
+            <div id="balance">0</div>
+        </div>
+        <div>
+            <div class="small">👥 Referrals</div>
+            <div id="refs">0</div>
+        </div>
     </div>
-
-    <div class="features-grid">
-
-        <div class="feature-box">
-            <i class="fas fa-bolt"></i>
-            <span>အမြန်ဆုံးစနစ်</span>
-            <small>ချက်ချင်းဝန်ဆောင်မှု</small>
-        </div>
-
-        <div class="feature-box">
-            <i class="fas fa-shield-alt"></i>
-            <span>စိတ်ချရမှု</span>
-            <small>၁၀၀% အာမခံချက်</small>
-        </div>
-
-        <div class="feature-box">
-            <i class="fas fa-hand-holding-usd"></i>
-            <span>ဈေးနှုန်းချိုသာ</span>
-            <small>အကောင်းဆုံးနှုန်းထား</small>
-        </div>
-
-        <div class="feature-box">
-            <i class="fas fa-headset"></i>
-            <span>၂၄ နာရီဝန်ဆောင်မှု</span>
-            <small>အမြဲအသင့်ရှိ</small>
-        </div>
-
-    </div>
-
 </div>
 
-<!-- SHOP -->
-<div id="shop" class="page">
+<div class="card">
+    <div class="small">🔗 Referral Link</div>
+    <div class="box" id="link">loading...</div>
 
-    <h2 style="margin:30px 0;">Available Products</h2>
-
-    <div style="width:100%; display:grid; grid-template-columns:repeat(2,1fr); gap:15px;">
-
-        <div class="premium-card" style="text-align:center;">
-            <i class="fab fa-tiktok"
-                style="font-size:35px; color:#ff0050;"></i>
-            <p style="margin-top:10px;">TikTok</p>
-        </div>
-
-        <div class="premium-card" style="text-align:center;">
-            <i class="fab fa-facebook"
-                style="font-size:35px; color:#1877f2;"></i>
-            <p style="margin-top:10px;">Facebook</p>
-        </div>
-
-        <div class="premium-card" style="text-align:center;">
-            <i class="fab fa-telegram"
-                style="font-size:35px; color:#0088cc;"></i>
-            <p style="margin-top:10px;">Telegram</p>
-        </div>
-
-        <div class="premium-card" style="text-align:center;">
-            <i class="fas fa-gem"
-                style="font-size:35px; color:var(--gold);"></i>
-            <p style="margin-top:10px;">Premium</p>
-        </div>
-
-    </div>
-
+    <button class="btn" onclick="copy()">📋 Copy</button>
+    <button class="btn" onclick="share()">📤 Share</button>
 </div>
 
-<!-- ORDERS -->
-<div id="orders" class="page">
-
-    <h2 style="margin:30px 0;">
-        <i class="fas fa-list-ul"></i>
-        Order History
-    </h2>
-
-    <div class="premium-card" style="text-align:center; padding:40px 20px;">
-
-        <i class="fas fa-receipt fa-4x"
-            style="opacity:0.2; margin-bottom:20px;"></i>
-
-        <p style="opacity:0.6;">
-            No orders found yet.
-        </p>
-
-    </div>
-
+<div class="card">
+    <button class="btn" onclick="refresh()">🔄 Refresh</button>
 </div>
-
-<!-- LEADERBOARD -->
-<div id="leaderboard" class="page">
-
-    <h2 style="margin:30px 0;">
-        <i class="fas fa-trophy"
-            style="color:var(--gold);"></i>
-        Leaderboard
-    </h2>
-
-    <div class="season-box">
-        <small>SEASON ENDS IN</small>
-        <div id="countdown">
-            00D : 00H : 00M : 00S
-        </div>
-    </div>
-
-    <div class="leaderboard-list">
-
-        <div class="rank-item">
-            <div class="rank-info">
-                <span class="rank-number">1</span>
-                <span>Aung Kyaw</span>
-            </div>
-            <span class="rank-points">150000</span>
-        </div>
-
-        <div class="rank-item">
-            <div class="rank-info">
-                <span class="rank-number">2</span>
-                <span>Su Su</span>
-            </div>
-            <span class="rank-points">120000</span>
-        </div>
-
-    </div>
-
-</div>
-
-<!-- EARN -->
-<div id="earn" class="page">
-
-    <h2 style="margin:30px 0;">Earn Points</h2>
-
-    <div class="item-card">
-
-        <div style="display:flex; align-items:center;">
-
-            <div class="icon-box-premium">
-                <i class="fas fa-calendar-check"></i>
-            </div>
-
-            <div>
-                <p style="font-weight:bold;">Daily Reward</p>
-                <small style="color:var(--gold);">
-                    +500 Pts
-                </small>
-            </div>
-
-        </div>
-
-        <button class="claim-btn">
-            Claim
-        </button>
-
-    </div>
-
-    <div class="item-card">
-
-        <div style="display:flex; align-items:center;">
-
-            <div class="icon-box-premium">
-                <i class="fab fa-telegram-plane"></i>
-            </div>
-
-            <div>
-                <p style="font-weight:bold;">Join Channel</p>
-                <small style="color:var(--gold);">
-                    +2000 Pts
-                </small>
-            </div>
-
-        </div>
-
-        <button class="claim-btn">
-            Join
-        </button>
-
-    </div>
-
-    <div class="item-card">
-
-        <div style="display:flex; align-items:center;">
-
-            <div class="icon-box-premium">
-                <i class="fas fa-users"></i>
-            </div>
-
-            <div>
-                <p style="font-weight:bold;">Invite Friends</p>
-                <small style="color:var(--gold);">
-                    +1000 Pts
-                </small>
-            </div>
-
-        </div>
-
-        <button class="claim-btn">
-            Invite
-        </button>
-
-    </div>
-
-    <div class="item-card">
-
-        <div style="display:flex; align-items:center;">
-
-            <div class="icon-box-premium">
-                <i class="fas fa-shopping-cart"></i>
-            </div>
-
-            <div>
-                <p style="font-weight:bold;">Shop & Earn</p>
-                <small style="color:var(--gold);">
-                    Unlimited
-                </small>
-            </div>
-
-        </div>
-
-        <button class="claim-btn">
-            Shop
-        </button>
-
-    </div>
-
-</div>
-
-<!-- WALLET -->
-<div id="wallet" class="page">
-
-    <h2 style="margin:30px 0;">My Wallet</h2>
-
-    <div class="balance-card">
-
-        <p>Available Balance</p>
-
-        <h1 style="font-size:50px; margin:15px 0;">
-            0
-        </h1>
-
-        <p>10 Pts = 1 MMK</p>
-
-    </div>
-
-    <button class="btn-main btn-blue">
-        Withdraw Money
-    </button>
-
-</div>
-
-<!-- NAV -->
-<nav class="bottom-nav">
-
-    <a href="javascript:void(0)"
-        class="nav-item active"
-        onclick="showPage('home', this)">
-
-        <i class="fas fa-home"></i>
-        <span>Home</span>
-
-    </a>
-
-    <a href="javascript:void(0)"
-        class="nav-item"
-        onclick="showPage('shop', this)">
-
-        <i class="fas fa-shopping-bag"></i>
-        <span>Shop</span>
-
-    </a>
-
-    <a href="javascript:void(0)"
-        class="nav-item"
-        onclick="showPage('orders', this)">
-
-        <i class="fas fa-history"></i>
-        <span>Orders</span>
-
-    </a>
-
-    <a href="javascript:void(0)"
-        class="nav-item"
-        onclick="showPage('leaderboard', this)">
-
-        <i class="fas fa-trophy"></i>
-        <span>Leaderboard</span>
-
-    </a>
-
-    <a href="javascript:void(0)"
-        class="nav-item"
-        onclick="showPage('earn', this)">
-
-        <i class="fas fa-coins"></i>
-        <span>Earn</span>
-
-    </a>
-
-    <a href="javascript:void(0)"
-        class="nav-item"
-        onclick="showPage('wallet', this)">
-
-        <i class="fas fa-wallet"></i>
-        <span>Wallet</span>
-
-    </a>
-
-</nav>
 
 <script src="app.js"></script>
 
 </body>
-    </html>
+</html>
