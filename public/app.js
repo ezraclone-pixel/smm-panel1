@@ -1,151 +1,241 @@
 const tg = window.Telegram.WebApp;
 tg.expand();
 
-const API_URL = "https://smm-panel1.onrender.com"; // 🔁 Render URL ထည့်
+const user = tg.initDataUnsafe?.user || {
+    id: Date.now(),
+    first_name: "Guest"
+};
 
-let user = tg.initDataUnsafe?.user;
-let userId = user?.id;
+const API = "https://smm-panel1.onrender.com";
 
-// ---------------- INIT ----------------
-document.addEventListener("DOMContentLoaded", () => {
-    if (!userId) {
-        tg.showAlert("Telegram user not found!");
-        return;
+// ---------------- HAPTIC ----------------
+function haptic() {
+    if (tg.HapticFeedback) {
+        tg.HapticFeedback.impactOccurred("medium");
     }
+}
 
-    loginUser();
-    setupEarnButtons();
-});
+// ---------------- PAGE ----------------
+function showPage(pageId, element) {
+    haptic();
 
-// ---------------- LOGIN USER ----------------
-async function loginUser() {
+    document.querySelectorAll(".page").forEach(p => {
+        p.style.display = "none";
+    });
+
+    document.getElementById(pageId).style.display = "flex";
+
+    document.querySelectorAll(".nav-item").forEach(nav => {
+        nav.classList.remove("active");
+    });
+
+    if (element) {
+        element.classList.add("active");
+    }
+}
+
+// ---------------- COUNTDOWN ----------------
+function updateCountdown() {
+    const now = new Date();
+
+    const end = new Date(
+        now.getFullYear(),
+        now.getMonth() + 1,
+        0,
+        23,
+        59,
+        59
+    );
+
+    const diff = end - now;
+
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+
+    const hours = Math.floor(
+        (diff / (1000 * 60 * 60)) % 24
+    );
+
+    const mins = Math.floor(
+        (diff / (1000 * 60)) % 60
+    );
+
+    const secs = Math.floor(
+        (diff / 1000) % 60
+    );
+
+    const el = document.getElementById("countdown");
+
+    if (el) {
+        el.innerText =
+            `${days}D : ` +
+            `${hours.toString().padStart(2, "0")}H : ` +
+            `${mins.toString().padStart(2, "0")}M : ` +
+            `${secs.toString().padStart(2, "0")}S`;
+    }
+}
+
+setInterval(updateCountdown, 1000);
+updateCountdown();
+
+// ---------------- LOAD WALLET ----------------
+async function loadWallet() {
+
     try {
-        const res = await fetch(`${API_URL}/login`, {
+
+        const res = await fetch(`${API}/user/${user.id}`);
+
+        const data = await res.json();
+
+        const balanceEl = document.querySelector(".balance-card h1");
+
+        if (balanceEl) {
+            balanceEl.innerText = data.points || 0;
+        }
+
+        const rankPoints = document.querySelector(".user-rank-card .rank-points");
+
+        if (rankPoints) {
+            rankPoints.innerText = data.points || 0;
+        }
+
+    } catch (err) {
+        console.log(err);
+    }
+}
+
+// ---------------- DAILY CLAIM ----------------
+async function claimDailyReward() {
+
+    haptic();
+
+    try {
+
+        const res = await fetch(`${API}/claim`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+                "Content-Type": "application/json"
+            },
             body: JSON.stringify({
-                telegramId: userId,
-                username: user.username || "unknown"
+                userId: user.id,
+                name: user.first_name
             })
         });
 
         const data = await res.json();
 
-        if (data.success) {
-            updateBalance(data.user.points);
-        }
+        alert(data.msg);
+
+        loadWallet();
+
     } catch (err) {
-        console.log("Login error:", err);
-    }
-}
 
-// ---------------- UPDATE BALANCE ----------------
-function updateBalance(points) {
-    const balanceEl = document.querySelector(".balance-card h1");
-    if (balanceEl) {
-        balanceEl.innerText = points;
-    }
-}
+        alert("Server Error");
 
-// ---------------- DAILY REWARD ----------------
-async function claimDaily() {
-    try {
-        const res = await fetch(`${API_URL}/daily-claim`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ telegramId: userId })
-        });
-
-        const data = await res.json();
-
-        if (data.success) {
-            tg.showAlert(`+${data.reward} Points ရပြီ 🎉`);
-            updateBalance(data.points);
-        } else {
-            tg.showAlert(data.message || "Already claimed");
-        }
-    } catch (err) {
-        tg.showAlert("Server error");
+        console.log(err);
     }
 }
 
 // ---------------- WITHDRAW ----------------
-async function withdraw() {
+async function withdrawPoints() {
+
+    haptic();
+
+    const amount = prompt("Withdraw Points:");
+
+    if (!amount) return;
+
     try {
-        const res = await fetch(`${API_URL}/withdraw`, {
+
+        const res = await fetch(`${API}/withdraw`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ telegramId: userId })
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                userId: user.id,
+                amount: parseInt(amount)
+            })
         });
 
         const data = await res.json();
 
-        tg.showAlert(data.message);
+        alert(data.success ? "Withdraw Requested" : data.msg);
+
+        loadWallet();
+
     } catch (err) {
-        tg.showAlert("Withdraw error");
+
+        alert("Withdraw Failed");
+
+        console.log(err);
     }
 }
 
-// ---------------- REFERRAL LINK ----------------
-function getReferralLink() {
-    return `https://t.me/Myatt_205bot?start=${userId}`;
+// ---------------- INVITE ----------------
+function inviteFriends() {
+
+    haptic();
+
+    const bot = "Myatt_205bot";
+
+    const link =
+        `https://t.me/${bot}?startapp=${user.id}`;
+
+    tg.openTelegramLink(
+        `https://t.me/share/url?url=${encodeURIComponent(link)}`
+    );
 }
 
-// ---------------- SHOP ACTION (placeholder) ----------------
-function buyProduct(productId) {
-    fetch(`${API_URL}/buy`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            telegramId: userId,
-            productId
-        })
-    })
-    .then(res => res.json())
-    .then(data => tg.showAlert(data.message))
-    .catch(() => tg.showAlert("Buy error"));
+// ---------------- JOIN CHANNEL ----------------
+function joinChannel() {
+
+    haptic();
+
+    tg.openTelegramLink("https://t.me/Myat_2055");
 }
 
-// ---------------- EARN BUTTONS CONNECT ----------------
-function setupEarnButtons() {
-    const cards = document.querySelectorAll(".item-card");
+// ---------------- SHOP ----------------
+function openShop() {
 
-    // 0 = Daily Reward
-    if (cards[0]) {
-        cards[0].querySelector("button").onclick = () => {
-            tg.HapticFeedback.impactOccurred("medium");
-            claimDaily();
-        };
-    }
+    haptic();
 
-    // 1 = Join Channel
-    if (cards[1]) {
-        cards[1].querySelector("button").onclick = () => {
-            tg.HapticFeedback.impactOccurred("medium");
-            window.open("https://t.me/Myat_2055", "_blank");
-        };
-    }
+    const navs = document.querySelectorAll(".nav-item");
 
-    // 2 = Invite Friends
-    if (cards[2]) {
-        cards[2].querySelector("button").onclick = () => {
-            tg.HapticFeedback.impactOccurred("medium");
-            const link = getReferralLink();
-            tg.showAlert("Referral Link copied:\n" + link);
-            navigator.clipboard.writeText(link);
-        };
-    }
-
-    // 3 = Shop
-    if (cards[3]) {
-        cards[3].querySelector("button").onclick = () => {
-            tg.HapticFeedback.impactOccurred("medium");
-            showPage("shop", document.querySelectorAll(".nav-item")[1]);
-        };
-    }
+    showPage("shop", navs[1]);
 }
 
-// ---------------- GLOBAL FUNCTIONS ----------------
-window.claimDaily = claimDaily;
-window.withdraw = withdraw;
-window.buyProduct = buyProduct;
+// ---------------- START ----------------
+window.onload = () => {
+
+    loadWallet();
+
+    const dailyBtn = document.querySelectorAll(".claim-btn")[0];
+
+    if (dailyBtn) {
+        dailyBtn.onclick = claimDailyReward;
+    }
+
+    const joinBtn = document.querySelectorAll(".claim-btn")[1];
+
+    if (joinBtn) {
+        joinBtn.onclick = joinChannel;
+    }
+
+    const inviteBtn = document.querySelectorAll(".claim-btn")[2];
+
+    if (inviteBtn) {
+        inviteBtn.onclick = inviteFriends;
+    }
+
+    const shopBtn = document.querySelectorAll(".claim-btn")[3];
+
+    if (shopBtn) {
+        shopBtn.onclick = openShop;
+    }
+
+    const withdrawBtn = document.querySelector(".btn-blue");
+
+    if (withdrawBtn) {
+        withdrawBtn.onclick = withdrawPoints;
+    }
+};
