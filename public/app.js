@@ -1,77 +1,196 @@
 const tg = window.Telegram.WebApp;
 tg.expand();
 
+const user = tg.initDataUnsafe?.user;
+
 const API_URL = "https://smm-panel1.onrender.com";
 
-let userId = null;
-let userData = { balance: 0, referrals: 0 };
+let balance = 0;
 
-// ---------------- INIT ----------------
-function init() {
-    const user = tg.initDataUnsafe?.user;
+// ---------------- HAPTIC ----------------
+function haptic() {
+    if (tg.HapticFeedback) {
+        tg.HapticFeedback.impactOccurred('medium');
+    }
+}
+
+// ---------------- LOAD USER ----------------
+async function loginUser() {
 
     if (!user) {
-        document.getElementById("userId").innerText = "Telegram not detected";
+        alert("Open from Telegram Bot");
         return;
     }
 
-    userId = user.id;
-    document.getElementById("userId").innerText = userId;
-
-    loginUser();
-    loadLocal();
-}
-
-// ---------------- LOGIN ONLY (backend compatible) ----------------
-async function loginUser() {
     try {
-        await fetch(`${API_URL}/login`, {
+
+        const ref = new URLSearchParams(window.location.search).get("ref");
+
+        const res = await fetch(`${API_URL}/login`, {
             method: "POST",
-            headers: {"Content-Type":"application/json"},
+            headers: {
+                "Content-Type": "application/json"
+            },
             body: JSON.stringify({
-                telegramId: userId
+                userId: user.id,
+                username: user.username || user.first_name,
+                referrer: ref || null
             })
         });
 
-        // no extra API calls → safe with your backend
-        loadLocal();
+        const data = await res.json();
 
-    } catch (e) {
-        console.log(e);
+        balance = data.points || 0;
+
+        updateBalance();
+
+    } catch (err) {
+        console.log(err);
     }
 }
 
-// ---------------- LOCAL UI (NO EXTRA API) ----------------
-function loadLocal() {
-    // fallback display (backend မလိုပဲ UI မပျက်အောင်)
-    document.getElementById("balance").innerText = userData.balance;
-    document.getElementById("refs").innerText = userData.referrals;
+// ---------------- UPDATE BALANCE ----------------
+function updateBalance() {
 
-    document.getElementById("link").innerText =
-        `https://t.me/Myatt_205bot?start=${userId}`;
+    const balanceText = document.querySelector(".balance-card h1");
+
+    if (balanceText) {
+        balanceText.innerText = balance.toLocaleString();
+    }
+
+    const rankPoint = document.querySelector(".user-rank-card .rank-points");
+
+    if (rankPoint) {
+        rankPoint.innerText = balance.toLocaleString();
+    }
 }
 
-// ---------------- COPY ----------------
-function copy() {
-    const text = document.getElementById("link").innerText;
-    navigator.clipboard.writeText(text);
-    tg.HapticFeedback.notificationOccurred("success");
-    alert("Copied!");
+// ---------------- DAILY CLAIM ----------------
+async function claimDaily(button) {
+
+    haptic();
+
+    try {
+
+        button.disabled = true;
+        button.innerText = "Loading...";
+
+        const res = await fetch(`${API_URL}/daily`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                userId: user.id
+            })
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+
+            balance = data.points;
+
+            updateBalance();
+
+            tg.showAlert(`✅ Daily Reward Claimed\n+500 Points`);
+
+            button.innerText = "Claimed";
+
+        } else {
+
+            tg.showAlert(data.message || "Already claimed today");
+
+            button.innerText = "Claimed";
+        }
+
+    } catch (err) {
+
+        console.log(err);
+
+        tg.showAlert("Server Error");
+
+        button.disabled = false;
+        button.innerText = "Claim";
+    }
 }
 
-// ---------------- SHARE ----------------
-function share() {
-    const link = document.getElementById("link").innerText;
+// ---------------- INVITE ----------------
+function inviteFriends() {
 
-    const url = `https://t.me/share/url?url=${encodeURIComponent(link)}&text=Join+and+earn+rewards`;
+    haptic();
 
-    window.open(url, "_blank");
+    const link = `https://t.me/Myatt_205bot?start=${user.id}`;
+
+    window.open(
+        `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent("Join Myat Digital Shop and earn rewards!")}`
+    );
 }
 
-// ---------------- REFRESH ----------------
-function refresh() {
-    loadLocal();
+// ---------------- JOIN CHANNEL ----------------
+function joinChannel() {
+
+    haptic();
+
+    window.open("https://t.me/Myat_2055");
+
+    tg.showAlert("✅ Channel Joined");
 }
 
-// ---------------- START ----------------
-init();
+// ---------------- PAGE ----------------
+function showPage(pageId, element) {
+
+    haptic();
+
+    document.querySelectorAll('.page').forEach(p => {
+        p.style.display = 'none';
+    });
+
+    document.getElementById(pageId).style.display = 'flex';
+
+    document.querySelectorAll('.nav-item').forEach(nav => {
+        nav.classList.remove('active');
+    });
+
+    element.classList.add('active');
+}
+
+// ---------------- COUNTDOWN ----------------
+function updateCountdown() {
+
+    const now = new Date();
+
+    const end = new Date(
+        now.getFullYear(),
+        now.getMonth() + 1,
+        0,
+        23,
+        59,
+        59
+    );
+
+    const diff = end - now;
+
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+
+    const hours = Math.floor(
+        (diff / (1000 * 60 * 60)) % 24
+    );
+
+    const mins = Math.floor(
+        (diff / (1000 * 60)) % 60
+    );
+
+    const secs = Math.floor(
+        (diff / 1000) % 60
+    );
+
+    document.getElementById('countdown').innerText =
+        `${days}D : ${hours.toString().padStart(2, '0')}H : ${mins.toString().padStart(2, '0')}M : ${secs.toString().padStart(2, '0')}S`;
+}
+
+setInterval(updateCountdown, 1000);
+
+updateCountdown();
+
+loginUser();
