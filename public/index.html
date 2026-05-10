@@ -1,328 +1,254 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Myat Digital Shop</title>
 
-    <title>Myat Digital Shop</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
-    <!-- Telegram Web App -->
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+/* ---------------- BASE ---------------- */
+body {
+  margin:0;
+  font-family:-apple-system,system-ui,sans-serif;
+  background: radial-gradient(circle at top,#0b0f14,#050608);
+  color:#fff;
+}
 
-    <!-- Font Awesome -->
-    <link rel="stylesheet"
-          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+body::before {
+  content:"";
+  position:fixed;
+  width:100%;
+  height:100%;
+  background:
+    radial-gradient(circle at 20% 20%, rgba(0,136,204,0.12), transparent 40%),
+    radial-gradient(circle at 80% 80%, rgba(255,215,0,0.06), transparent 40%);
+  z-index:-1;
+}
 
-    <style>
+/* ---------------- PAGE ---------------- */
+.page {
+  display:none;
+  min-height:100vh;
+  padding:20px;
+  padding-bottom:120px;
+}
 
-        *{
-            margin:0;
-            padding:0;
-            box-sizing:border-box;
-            font-family:Arial, sans-serif;
-        }
+.active-page {
+  display:flex;
+  flex-direction:column;
+}
 
-        body{
-            background:#0f172a;
-            color:white;
-            padding-bottom:90px;
-        }
+/* ---------------- CARD ---------------- */
+.card {
+  background:rgba(255,255,255,0.04);
+  border:1px solid rgba(255,255,255,0.08);
+  backdrop-filter:blur(15px);
+  border-radius:18px;
+  padding:16px;
+  margin:10px 0;
+}
 
-        .header{
-            padding:20px;
-            text-align:center;
-            background:#111827;
-            border-bottom:1px solid #1f2937;
-        }
+/* ---------------- SMALL PREMIUM BUTTON ---------------- */
+.small-btn {
+  padding:6px 12px;
+  font-size:11px;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,0.12);
+  background:rgba(255,255,255,0.06);
+  color:#fff;
+  font-weight:600;
+  transition:0.2s;
+}
 
-        .header h1{
-            font-size:24px;
-        }
+.small-btn:active {
+  transform:scale(0.92);
+}
 
-        .card{
-            background:#111827;
-            margin:15px;
-            padding:20px;
-            border-radius:18px;
-        }
+.small-btn.gold {
+  background:linear-gradient(135deg,#ffd700,#ffb300);
+  color:#000;
+  border:none;
+}
 
-        .balance{
-            text-align:center;
-        }
+/* ---------------- TASK BOX ---------------- */
+.task-box {
+  background:rgba(255,255,255,0.03);
+  border:1px solid rgba(255,255,255,0.06);
+  border-radius:14px;
+  padding:12px;
+  margin:10px 0;
 
-        .balance h2{
-            font-size:34px;
-            margin-top:10px;
-            color:#38bdf8;
-        }
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
 
-        button{
-            width:100%;
-            border:none;
-            padding:14px;
-            border-radius:14px;
-            background:#2563eb;
-            color:white;
-            font-size:16px;
-            margin-top:15px;
-            cursor:pointer;
-        }
+/* ---------------- NAV ---------------- */
+.bottom-nav {
+  position:fixed;
+  bottom:10px;
+  left:10px;
+  right:10px;
+  height:65px;
+  background:rgba(10,10,15,0.85);
+  backdrop-filter:blur(18px);
+  border-radius:18px;
+  display:flex;
+  justify-content:space-around;
+  align-items:center;
+  border:1px solid rgba(255,255,255,0.08);
+}
 
-        button:active{
-            transform:scale(0.98);
-        }
+.nav-item {
+  flex:1;
+  text-align:center;
+  color:#777;
+  font-size:10px;
+}
 
-        .shop-item{
-            background:#1e293b;
-            padding:15px;
-            border-radius:14px;
-            margin-top:12px;
-        }
+.nav-item i {
+  display:block;
+  font-size:18px;
+  margin-bottom:3px;
+}
 
-        .shop-item h3{
-            margin-bottom:8px;
-        }
+.nav-item.active {
+  color:#fff;
+}
 
-        .leaderboard-item{
-            display:flex;
-            justify-content:space-between;
-            background:#1e293b;
-            padding:12px;
-            border-radius:12px;
-            margin-top:10px;
-        }
+.nav-item.active i {
+  color:#ffd700;
+}
+</style>
 
-        .bottom-nav{
-            position:fixed;
-            bottom:0;
-            left:0;
-            width:100%;
-            background:#111827;
-            border-top:1px solid #1f2937;
-            display:flex;
-            justify-content:space-around;
-            padding:12px 0;
-        }
-
-        .bottom-nav button{
-            width:auto;
-            margin:0;
-            background:none;
-            color:white;
-            font-size:14px;
-        }
-
-        .page{
-            display:none;
-        }
-
-        .page.active{
-            display:block;
-        }
-
-        .section-title{
-            margin-bottom:15px;
-            font-size:18px;
-        }
-
-        input{
-            width:100%;
-            padding:14px;
-            border:none;
-            border-radius:12px;
-            margin-top:10px;
-            background:#1e293b;
-            color:white;
-        }
-
-    </style>
 </head>
+
 <body>
 
-    <!-- HOME PAGE -->
-    <div id="homePage" class="page active">
+<!-- 🏠 HOME -->
+<div id="home" class="page active-page">
 
-        <div class="header">
-            <h1>Myat Digital Shop</h1>
-            <p id="username">Loading...</p>
-        </div>
+  <div class="card">
+    <h2>👋 Welcome</h2>
+    <p>Myat Digital Shop</p>
+  </div>
 
-        <div class="card balance">
-            <p>Your Points</p>
-            <h2 id="points">0</h2>
+  <div class="card">
+    <h3>Balance</h3>
+    <p>Points: <span id="balance">0</span></p>
+  </div>
 
-            <button onclick="claimDaily()">
-                🎁 Daily Reward
-            </button>
+  <!-- 🎮 GAME AREA -->
+  <div class="card">
+    <h3>🎮 Game Zone</h3>
+    <p>Play & earn coming system</p>
 
-            <button onclick="inviteFriends()">
-                👥 Invite Friends
-            </button>
-        </div>
+    <button class="small-btn gold" onclick="startGame()">
+      Start Game
+    </button>
+  </div>
 
-        <div class="card">
-            <h3 class="section-title">Tasks</h3>
+</div>
 
-            <button onclick="joinChannel()">
-                📢 Join Channel (+2000)
-            </button>
-        </div>
+<!-- ⚡ TASK -->
+<div id="task" class="page">
+  <div class="card">
+    <h3>⚡ Earn Tasks</h3>
 
+    <div class="task-box">
+      <span><i class="fas fa-calendar-check" style="color:#ffd700;"></i> Daily Reward</span>
+      <button class="small-btn gold" onclick="claimDaily()">Claim</button>
     </div>
 
-    <!-- SHOP PAGE -->
-    <div id="shopPage" class="page">
-
-        <div class="header">
-            <h1>Shop</h1>
-        </div>
-
-        <div class="card">
-
-            <div class="shop-item">
-                <h3>MLBB 86 Diamonds</h3>
-                <p>5000 Points</p>
-
-                <button onclick="buyProduct('MLBB 86 Diamonds',5000)">
-                    Buy
-                </button>
-            </div>
-
-            <div class="shop-item">
-                <h3>Free Fire 100 Diamonds</h3>
-                <p>6000 Points</p>
-
-                <button onclick="buyProduct('Free Fire 100 Diamonds',6000)">
-                    Buy
-                </button>
-            </div>
-
-            <div class="shop-item">
-                <h3>Pubg UC 60</h3>
-                <p>7000 Points</p>
-
-                <button onclick="buyProduct('Pubg UC 60',7000)">
-                    Buy
-                </button>
-            </div>
-
-        </div>
-
+    <div class="task-box">
+      <span><i class="fas fa-user-friends" style="color:#00d4ff;"></i> Referral</span>
+      <button class="small-btn" onclick="inviteFriends()">Invite</button>
     </div>
 
-    <!-- LEADERBOARD PAGE -->
-    <div id="leaderboardPage" class="page">
-
-        <div class="header">
-            <h1>Leaderboard</h1>
-        </div>
-
-        <div class="card">
-            <div id="leaderboard"></div>
-        </div>
-
+    <div class="task-box">
+      <span><i class="fab fa-telegram" style="color:#0088cc;"></i> Channel</span>
+      <button class="small-btn" onclick="window.open('https://t.me/Myatt_205bot')">Join</button>
     </div>
 
-    <!-- WALLET PAGE -->
-    <div id="walletPage" class="page">
-
-        <div class="header">
-            <h1>Withdraw</h1>
-        </div>
-
-        <div class="card">
-
-            <input type="text"
-                   id="walletInput"
-                   placeholder="Enter KBZPay / WavePay Number">
-
-            <button onclick="submitWithdraw()">
-                Withdraw 10000 Points
-            </button>
-
-        </div>
-
+    <div class="task-box" style="border:1px solid rgba(255,215,0,0.3);">
+      <span><i class="fas fa-gamepad" style="color:#ffd700;"></i> Play Game</span>
+      <button class="small-btn gold" onclick="goHomeGame()">Play</button>
     </div>
 
-    <!-- ORDERS PAGE -->
-    <div id="ordersPage" class="page">
+  </div>
+</div>
 
-        <div class="header">
-            <h1>Orders</h1>
-        </div>
+<!-- 🏆 LEADERBOARD -->
+<div id="leaderboard" class="page">
+  <div class="card">
+    <h3>🏆 Leaderboard</h3>
+    <p>Top players ranking</p>
+  </div>
+</div>
 
-        <div class="card">
-            <p>Your orders will appear here.</p>
-        </div>
+<!-- 💰 WALLET -->
+<div id="wallet" class="page">
+  <div class="card">
+    <h3>💰 Wallet</h3>
+    <p>Balance: <span id="balance">0</span></p>
 
-    </div>
+    <button class="small-btn gold" onclick="withdraw()">Withdraw</button>
+  </div>
+</div>
 
-    <!-- BOTTOM NAV -->
-    <div class="bottom-nav">
+<!-- 📱 NAV -->
+<div class="bottom-nav">
 
-        <button onclick="showPage('homePage')">
-            <i class="fa-solid fa-house"></i>
-        </button>
+  <div class="nav-item active" onclick="showPage('home', this)">
+    <i class="fas fa-home"></i>
+    Home
+  </div>
 
-        <button onclick="showPage('shopPage')">
-            <i class="fa-solid fa-store"></i>
-        </button>
+  <div class="nav-item" onclick="showPage('task', this)">
+    <i class="fas fa-bolt"></i>
+    Task
+  </div>
 
-        <button onclick="showPage('leaderboardPage')">
-            <i class="fa-solid fa-trophy"></i>
-        </button>
+  <div class="nav-item" onclick="showPage('leaderboard', this)">
+    <i class="fas fa-trophy"></i>
+    Rank
+  </div>
 
-        <button onclick="showPage('walletPage')">
-            <i class="fa-solid fa-wallet"></i>
-        </button>
+  <div class="nav-item" onclick="showPage('wallet', this)">
+    <i class="fas fa-wallet"></i>
+    Wallet
+  </div>
 
-        <button onclick="showPage('ordersPage')">
-            <i class="fa-solid fa-box"></i>
-        </button>
+</div>
 
-    </div>
+<script src="app.js"></script>
 
-    <!-- PAGE SWITCH -->
-    <script>
+<script>
+function showPage(id, el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active-page'));
+  document.getElementById(id).classList.add('active-page');
 
-        function showPage(pageId){
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  el.classList.add('active');
 
-            document
-            .querySelectorAll(".page")
-            .forEach(page => {
-                page.classList.remove("active");
-            });
+  if(window.Telegram?.WebApp){
+    Telegram.WebApp.HapticFeedback.impactOccurred('medium');
+  }
+}
 
-            document
-            .getElementById(pageId)
-            .classList.add("active");
-        }
+/* Play game → home */
+function goHomeGame(){
+  showPage('home', document.querySelectorAll('.nav-item')[0]);
+}
 
-        function joinChannel(){
-
-            window.open("https://t.me/Myatt_205bot", "_blank");
-
-            alert("Join the channel to receive rewards.");
-        }
-
-        function submitWithdraw(){
-
-            const wallet =
-                document.getElementById("walletInput").value;
-
-            if(!wallet){
-                alert("Enter wallet number");
-                return;
-            }
-
-            withdraw(10000, wallet);
-        }
-
-    </script>
-
-    <!-- APP JS -->
-    <script src="app.js"></script>
+/* game start */
+function startGame(){
+  alert("Game coming soon 🚀");
+}
+</script>
 
 </body>
-    </html>
+</html>
