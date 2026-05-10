@@ -4,7 +4,7 @@ tg.expand();
 const user = tg.initDataUnsafe?.user;
 
 // ---------------- API URL ----------------
-const API_URL = "https://YOUR-RENDER-URL.onrender.com";
+const API_URL = "https://smm-panel1.onrender.com";
 
 // ---------------- CURRENT USER ----------------
 let currentUser = null;
