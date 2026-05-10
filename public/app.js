@@ -8,11 +8,6 @@ const API_URL = "https://smm-panel1.onrender.com";
 let balance = 0;
 
 // ---------------- HAPTIC ----------------
-function haptic() {
-    if (tg.HapticFeedback) {
-        tg.HapticFeedback.impactOccurred('medium');
-    }
-}
 
 // ---------------- LOAD USER ----------------
 async function loginUser() {
@@ -68,12 +63,7 @@ function updateBalance() {
 // ---------------- DAILY CLAIM ----------------
 async function claimDaily(button) {
 
-    haptic();
-
     try {
-
-        button.disabled = true;
-        button.innerText = "Loading...";
 
         const res = await fetch(`${API_URL}/daily`, {
             method: "POST",
@@ -91,29 +81,27 @@ async function claimDaily(button) {
 
             balance = data.points;
 
-            updateBalance();
+            document.querySelector(".balance-card h1").innerText =
+                balance.toLocaleString();
 
-            tg.showAlert(`✅ Daily Reward Claimed\n+500 Points`);
+            tg.showAlert("✅ +500 Points Claimed");
 
             button.innerText = "Claimed";
+            button.disabled = true;
 
         } else {
 
-            tg.showAlert(data.message || "Already claimed today");
-
-            button.innerText = "Claimed";
+            tg.showAlert(data.message || "Already claimed");
         }
 
     } catch (err) {
 
         console.log(err);
 
-        tg.showAlert("Server Error");
-
-        button.disabled = false;
-        button.innerText = "Claim";
+        alert("Server Error");
     }
 }
+
 
 // ---------------- INVITE ----------------
 function inviteFriends() {
