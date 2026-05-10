@@ -71,7 +71,7 @@ async function claimDaily(button) {
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
-                userId: user.id
+                telegramId: user.id
             })
         });
 
