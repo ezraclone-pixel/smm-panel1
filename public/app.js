@@ -1,177 +1,106 @@
-// ===============================
-// Myat Digital Shop - APP.JS FINAL
-// ===============================
+const tg = window.Telegram.WebApp;
+tg.expand();
 
-const API_URL = "https://smm-panel1.onrender.com"; // 🔴 Render URL ထည့်ရမယ်
+// ---------------- USER ----------------
+const user = tg.initDataUnsafe?.user;
+const userId = user?.id || "guest_" + Math.floor(Math.random() * 99999);
 
-const tg = window.Telegram?.WebApp;
+// ---------------- STORAGE ----------------
+let data = {
+    points: 0,
+    lastDaily: null
+};
 
-// ---------------- INIT ----------------
-if (tg) {
-    tg.expand();
-}
+const key = "myat_shop_" + userId;
 
-// ---------------- USER DATA ----------------
-let user = null;
-let balance = 0;
-
-// ---------------- LOGIN ----------------
-async function loginUser() {
-    try {
-        if (!tg || !tg.initDataUnsafe?.user) return;
-
-        user = tg.initDataUnsafe.user;
-
-        const res = await fetch(`${API_URL}/api/login`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                id: user.id,
-                first_name: user.first_name,
-                username: user.username
-            })
-        });
-
-        const data = await res.json();
-
-        if (data.success) {
-            balance = data.user.points || 0;
-            updateUI();
-        }
-    } catch (err) {
-        console.log("Login error:", err);
+// load saved data
+function loadData() {
+    const saved = localStorage.getItem(key);
+    if (saved) {
+        data = JSON.parse(saved);
     }
 }
 
-// ---------------- UPDATE UI ----------------
+// save data
+function saveData() {
+    localStorage.setItem(key, JSON.stringify(data));
+}
+
+// ---------------- UI UPDATE ----------------
 function updateUI() {
-    const balanceEl = document.querySelector("#wallet h1");
-    if (balanceEl) {
-        balanceEl.innerText = balance;
-    }
-}
+    const walletBalance = document.querySelector("#wallet .balance-card h1");
+    const rankPoints = document.querySelector(".user-rank-card .rank-points div");
 
-// ---------------- NAVIGATION ----------------
-function showPage(pageId, element) {
-    haptic();
-
-    document.querySelectorAll('.page').forEach(p => {
-        p.classList.remove('active-page');
-        p.style.display = "none";
-    });
-
-    const active = document.getElementById(pageId);
-    if (active) {
-        active.classList.add('active-page');
-        active.style.display = "flex";
-    }
-
-    document.querySelectorAll('.nav-item').forEach(nav => {
-        nav.classList.remove('active');
-    });
-
-    if (element) element.classList.add('active');
+    if (walletBalance) walletBalance.innerText = data.points;
+    if (rankPoints) rankPoints.innerText = data.points;
 }
 
 // ---------------- HAPTIC ----------------
 function haptic() {
-    if (tg) {
-        tg.HapticFeedback.impactOccurred('medium');
-    }
+    try {
+        tg.HapticFeedback.impactOccurred("medium");
+    } catch (e) {}
 }
 
 // ---------------- DAILY REWARD ----------------
-async function claimDaily() {
-    try {
-        haptic();
+function claimDaily() {
+    const now = new Date().getTime();
 
-        const res = await fetch(`${API_URL}/api/daily`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ id: user?.id })
-        });
-
-        const data = await res.json();
-
-        if (data.success) {
-            balance += data.reward;
-            updateUI();
-            tg?.showAlert(`🎁 +${data.reward} Points received!`);
-        } else {
-            tg?.showAlert(data.message || "Already claimed today!");
-        }
-    } catch (err) {
-        console.log(err);
+    if (data.lastDaily && now - data.lastDaily < 86400000) {
+        tg.showAlert("Daily reward already claimed today!");
+        return;
     }
+
+    data.points += 500;
+    data.lastDaily = now;
+
+    saveData();
+    updateUI();
+
+    tg.showAlert("+500 Points Added!");
+    haptic();
 }
 
 // ---------------- JOIN CHANNEL ----------------
 function joinChannel() {
-    haptic();
+    data.points += 2000;
+    saveData();
+    updateUI();
+
     window.open("https://t.me/Myat_2055", "_blank");
-}
-
-// ---------------- INVITE ----------------
-function inviteFriends() {
+    tg.showAlert("+2000 Points Added!");
     haptic();
+}
 
-    const link = `https://t.me/Myatt_205bot?start=${user?.id}`;
+// ---------------- INVITE FRIENDS ----------------
+function inviteFriends() {
+    const link = `https://t.me/Myatt_205bot?start=${userId}`;
+    navigator.clipboard.writeText(link);
 
-    if (tg?.shareToStory) {
-        tg.shareToStory(link);
-    } else {
-        tg?.showAlert("Invite link copied!");
-        navigator.clipboard.writeText(link);
+    tg.showAlert("Invite link copied!");
+    haptic();
+}
+
+// ---------------- BUTTON BINDING ----------------
+function bindButtons() {
+    const buttons = document.querySelectorAll(".item-card");
+
+    if (buttons.length >= 1) {
+        buttons[0].querySelector("button").onclick = claimDaily;
+    }
+
+    if (buttons.length >= 2) {
+        buttons[1].querySelector("button").onclick = joinChannel;
+    }
+
+    if (buttons.length >= 3) {
+        buttons[2].querySelector("button").onclick = inviteFriends;
     }
 }
 
-// ---------------- WITHDRAW ----------------
-async function withdraw() {
-    try {
-        haptic();
-
-        const res = await fetch(`${API_URL}/api/withdraw`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                id: user?.id,
-                amount: balance
-            })
-        });
-
-        const data = await res.json();
-
-        if (data.success) {
-            tg?.showAlert("Withdraw request sent!");
-        } else {
-            tg?.showAlert(data.message || "Not enough points!");
-        }
-    } catch (err) {
-        console.log(err);
-    }
-}
-
-// ---------------- COUNTDOWN (optional override) ----------------
-function updateCountdown() {
-    const now = new Date();
-    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
-    const diff = end - now;
-
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
-    const mins = Math.floor((diff / (1000 * 60)) % 60);
-    const secs = Math.floor((diff / 1000) % 60);
-
-    const el = document.getElementById("countdown");
-    if (el) {
-        el.innerText =
-            `${days}D : ${hours.toString().padStart(2, '0')}H : ` +
-            `${mins.toString().padStart(2, '0')}M : ${secs.toString().padStart(2, '0')}S`;
-    }
-}
-
-setInterval(updateCountdown, 1000);
-
-// ---------------- START ----------------
-loginUser();
-updateCountdown();
+// ---------------- INIT ----------------
+document.addEventListener("DOMContentLoaded", () => {
+    loadData();
+    updateUI();
+    bindButtons();
+});
