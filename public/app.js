@@ -1,237 +1,177 @@
-const tg = window.Telegram.WebApp;
-tg.expand();
+// ===============================
+// Myat Digital Shop - APP.JS FINAL
+// ===============================
 
-const user = tg.initDataUnsafe?.user;
+const API_URL = "https://smm-panel1.onrender.com"; // 🔴 Render URL ထည့်ရမယ်
 
-// ---------------- API URL ----------------
-const API_URL = "https://smm-panel1.onrender.com";
+const tg = window.Telegram?.WebApp;
 
-// ---------------- CURRENT USER ----------------
-let currentUser = null;
+// ---------------- INIT ----------------
+if (tg) {
+    tg.expand();
+}
 
-// ---------------- LOGIN + REFERRAL ----------------
-async function login() {
+// ---------------- USER DATA ----------------
+let user = null;
+let balance = 0;
 
-    if (!user) {
-        alert("Open inside Telegram");
-        return;
-    }
-
+// ---------------- LOGIN ----------------
+async function loginUser() {
     try {
+        if (!tg || !tg.initDataUnsafe?.user) return;
 
-        const startParam =
-            Telegram.WebApp.initDataUnsafe.start_param;
+        user = tg.initDataUnsafe.user;
 
-        const res = await fetch(`${API_URL}/login`, {
+        const res = await fetch(`${API_URL}/api/login`, {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-                telegramId: String(user.id),
-                name: user.first_name,
-                ref: startParam || null
+                id: user.id,
+                first_name: user.first_name,
+                username: user.username
             })
         });
 
-        currentUser = await res.json();
+        const data = await res.json();
 
-        updateUI();
-
+        if (data.success) {
+            balance = data.user.points || 0;
+            updateUI();
+        }
     } catch (err) {
-
-        console.log(err);
-
-        alert("Server connection failed");
+        console.log("Login error:", err);
     }
 }
 
 // ---------------- UPDATE UI ----------------
 function updateUI() {
-
-    if (!currentUser) return;
-
-    const username =
-        document.getElementById("username");
-
-    const points =
-        document.getElementById("points");
-
-    if (username) {
-        username.innerText =
-            currentUser.name || "User";
-    }
-
-    if (points) {
-        points.innerText =
-            currentUser.points || 0;
+    const balanceEl = document.querySelector("#wallet h1");
+    if (balanceEl) {
+        balanceEl.innerText = balance;
     }
 }
 
-// ---------------- DAILY CLAIM ----------------
+// ---------------- NAVIGATION ----------------
+function showPage(pageId, element) {
+    haptic();
+
+    document.querySelectorAll('.page').forEach(p => {
+        p.classList.remove('active-page');
+        p.style.display = "none";
+    });
+
+    const active = document.getElementById(pageId);
+    if (active) {
+        active.classList.add('active-page');
+        active.style.display = "flex";
+    }
+
+    document.querySelectorAll('.nav-item').forEach(nav => {
+        nav.classList.remove('active');
+    });
+
+    if (element) element.classList.add('active');
+}
+
+// ---------------- HAPTIC ----------------
+function haptic() {
+    if (tg) {
+        tg.HapticFeedback.impactOccurred('medium');
+    }
+}
+
+// ---------------- DAILY REWARD ----------------
 async function claimDaily() {
-
-    if (!currentUser) return;
-
     try {
+        haptic();
 
-        const res = await fetch(`${API_URL}/daily`, {
+        const res = await fetch(`${API_URL}/api/daily`, {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                telegramId: currentUser.telegramId
-            })
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id: user?.id })
         });
 
         const data = await res.json();
 
-        alert(data.message);
-
-        if (data.user) {
-
-            currentUser = data.user;
-
+        if (data.success) {
+            balance += data.reward;
             updateUI();
+            tg?.showAlert(`🎁 +${data.reward} Points received!`);
+        } else {
+            tg?.showAlert(data.message || "Already claimed today!");
         }
-
     } catch (err) {
-
         console.log(err);
-
-        alert("Daily reward failed");
     }
 }
 
-// ---------------- INVITE FRIENDS ----------------
-function inviteFriends() {
-
-    if (!currentUser) return;
-
-    const botUsername = "Myatt_205bot";
-
-    const refLink =
-        `https://t.me/${botUsername}?start=${currentUser.telegramId}`;
-
-    const shareText =
-        `Join Myat Digital Shop and earn rewards!\n${refLink}`;
-
-    Telegram.WebApp.openTelegramLink(
-        `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${encodeURIComponent(shareText)}`
-    );
+// ---------------- JOIN CHANNEL ----------------
+function joinChannel() {
+    haptic();
+    window.open("https://t.me/Myat_2055", "_blank");
 }
 
-// ---------------- BUY PRODUCT ----------------
-async function buyProduct(product, price) {
+// ---------------- INVITE ----------------
+function inviteFriends() {
+    haptic();
 
-    if (!currentUser) return;
+    const link = `https://t.me/Myatt_205bot?start=${user?.id}`;
 
-    try {
-
-        const res = await fetch(`${API_URL}/buy`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                telegramId: currentUser.telegramId,
-                product,
-                price
-            })
-        });
-
-        const data = await res.json();
-
-        alert(data.message);
-
-        if (data.user) {
-
-            currentUser = data.user;
-
-            updateUI();
-        }
-
-    } catch (err) {
-
-        console.log(err);
-
-        alert("Purchase failed");
+    if (tg?.shareToStory) {
+        tg.shareToStory(link);
+    } else {
+        tg?.showAlert("Invite link copied!");
+        navigator.clipboard.writeText(link);
     }
 }
 
 // ---------------- WITHDRAW ----------------
-async function withdraw(points, wallet) {
-
-    if (!currentUser) return;
-
+async function withdraw() {
     try {
+        haptic();
 
-        const res = await fetch(`${API_URL}/withdraw`, {
+        const res = await fetch(`${API_URL}/api/withdraw`, {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-                telegramId: currentUser.telegramId,
-                wallet,
-                points
+                id: user?.id,
+                amount: balance
             })
         });
 
         const data = await res.json();
 
-        alert(data.message);
-
-        if (data.user) {
-
-            currentUser = data.user;
-
-            updateUI();
+        if (data.success) {
+            tg?.showAlert("Withdraw request sent!");
+        } else {
+            tg?.showAlert(data.message || "Not enough points!");
         }
-
     } catch (err) {
-
-        console.log(err);
-
-        alert("Withdraw failed");
-    }
-}
-
-// ---------------- LOAD LEADERBOARD ----------------
-async function loadLeaderboard() {
-
-    try {
-
-        const res =
-            await fetch(`${API_URL}/leaderboard`);
-
-        const users = await res.json();
-
-        const leaderboard =
-            document.getElementById("leaderboard");
-
-        if (!leaderboard) return;
-
-        leaderboard.innerHTML = "";
-
-        users.forEach((u, index) => {
-
-            leaderboard.innerHTML += `
-                <div class="leaderboard-item">
-                    <span>#${index + 1}</span>
-                    <span>${u.name}</span>
-                    <span>${u.points}</span>
-                </div>
-            `;
-        });
-
-    } catch (err) {
-
         console.log(err);
     }
 }
+
+// ---------------- COUNTDOWN (optional override) ----------------
+function updateCountdown() {
+    const now = new Date();
+    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+    const diff = end - now;
+
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+    const mins = Math.floor((diff / (1000 * 60)) % 60);
+    const secs = Math.floor((diff / 1000) % 60);
+
+    const el = document.getElementById("countdown");
+    if (el) {
+        el.innerText =
+            `${days}D : ${hours.toString().padStart(2, '0')}H : ` +
+            `${mins.toString().padStart(2, '0')}M : ${secs.toString().padStart(2, '0')}S`;
+    }
+}
+
+setInterval(updateCountdown, 1000);
 
 // ---------------- START ----------------
-login();
-loadLeaderboard();
+loginUser();
+updateCountdown();
