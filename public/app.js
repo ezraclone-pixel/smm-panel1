@@ -38,9 +38,9 @@ async function login() {
         currentUser = await res.json();
 
         updateUI();
+        updateDailyStatus();
 
     } catch (err) {
-
         console.log(err);
         alert("Server connection failed");
     }
@@ -51,18 +51,14 @@ function updateUI() {
 
     if (!currentUser) return;
 
-    const username =
-        document.getElementById("username");
-
+    const username = document.getElementById("username");
     if (username) {
-        username.innerText =
-            currentUser.name || "User";
+        username.innerText = currentUser.name || "User";
     }
 
-    document.querySelectorAll("#balance")
-        .forEach(el => {
-            el.innerText = currentUser.points || 0;
-        });
+    document.querySelectorAll("#balance").forEach(el => {
+        el.innerText = currentUser.points || 0;
+    });
 
     updateDailyStatus();
 }
@@ -89,9 +85,9 @@ async function claimDaily() {
         alert(data.message);
 
         if (data.user) {
-
             currentUser = data.user;
             updateUI();
+            updateDailyStatus();
 
             if (window.Telegram?.WebApp) {
                 Telegram.WebApp.HapticFeedback.notificationOccurred("success");
@@ -99,10 +95,77 @@ async function claimDaily() {
         }
 
     } catch (err) {
-
         console.log(err);
         alert("Daily reward failed");
     }
+}
+
+// ---------------- UPDATE DAILY STATUS ----------------
+function updateDailyStatus() {
+
+    const btn = document.querySelector(".task-box button[onclick='claimDaily()']");
+    if (!btn || !currentUser) return;
+
+    const now = new Date();
+    const last = currentUser.lastClaim ? new Date(currentUser.lastClaim) : null;
+
+    let claimedToday = false;
+
+    if (last) {
+        claimedToday =
+            last.getDate() === now.getDate() &&
+            last.getMonth() === now.getMonth() &&
+            last.getFullYear() === now.getFullYear();
+    }
+
+    if (claimedToday) {
+        btn.innerHTML = "✔ Claimed";
+        btn.disabled = true;
+
+        startCountdown(btn, last);
+    } else {
+        btn.innerHTML = "Claim";
+        btn.disabled = false;
+
+        if (countdownInterval) {
+            clearInterval(countdownInterval);
+        }
+    }
+}
+
+// ---------------- COUNTDOWN ----------------
+function startCountdown(btn, lastTime) {
+
+    if (!lastTime) return;
+
+    if (countdownInterval) clearInterval(countdownInterval);
+
+    countdownInterval = setInterval(() => {
+
+        const now = new Date();
+
+        const nextReset = new Date(lastTime);
+        nextReset.setDate(nextReset.getDate() + 1);
+        nextReset.setHours(0, 0, 0, 0);
+
+        const diff = nextReset - now;
+
+        if (diff <= 0) {
+
+            btn.innerHTML = "Claim";
+            btn.disabled = false;
+
+            clearInterval(countdownInterval);
+            return;
+        }
+
+        const h = Math.floor(diff / (1000 * 60 * 60));
+        const m = Math.floor((diff / (1000 * 60)) % 60);
+        const s = Math.floor((diff / 1000) % 60);
+
+        btn.innerHTML = `⏳ ${h}h ${m}m ${s}s`;
+
+    }, 1000);
 }
 
 // ---------------- INVITE FRIENDS ----------------
@@ -152,11 +215,6 @@ async function withdraw() {
 
         alert(data.message);
 
-        if (data.user) {
-            currentUser = data.user;
-            updateUI();
-        }
-
     } catch (err) {
         console.log(err);
         alert("Withdraw failed");
@@ -171,9 +229,7 @@ async function loadLeaderboard() {
         const res = await fetch(`${API_URL}/leaderboard`);
         const users = await res.json();
 
-        const leaderboard =
-            document.getElementById("leaderboard");
-
+        const leaderboard = document.getElementById("leaderboard");
         if (!leaderboard) return;
 
         let html = `
@@ -183,7 +239,6 @@ async function loadLeaderboard() {
         `;
 
         users.forEach((u, index) => {
-
             html += `
                 <div class="card">
                     <div class="task-box">
@@ -199,76 +254,6 @@ async function loadLeaderboard() {
     } catch (err) {
         console.log(err);
     }
-}
-
-// ---------------- DAILY STATUS (✔ + COUNTDOWN) ----------------
-function updateDailyStatus() {
-
-    const btns = document.querySelectorAll(".task-box button");
-
-    const now = new Date();
-
-    const last = currentUser?.lastClaim
-        ? new Date(currentUser.lastClaim)
-        : null;
-
-    let claimedToday = false;
-
-    if (last) {
-        claimedToday =
-            last.getDate() === now.getDate() &&
-            last.getMonth() === now.getMonth() &&
-            last.getFullYear() === now.getFullYear();
-    }
-
-    btns.forEach(btn => {
-
-        if (btn.innerText.includes("Claim")) {
-
-            if (claimedToday) {
-
-                btn.innerHTML = "✔ Claimed";
-                btn.disabled = true;
-
-                startCountdown(btn, last);
-            }
-        }
-    });
-}
-
-// ---------------- COUNTDOWN ----------------
-function startCountdown(btn, lastTime) {
-
-    if (!lastTime) return;
-
-    if (countdownInterval) clearInterval(countdownInterval);
-
-    countdownInterval = setInterval(() => {
-
-        const now = new Date();
-
-        const nextReset = new Date(lastTime);
-        nextReset.setDate(nextReset.getDate() + 1);
-        nextReset.setHours(0, 0, 0, 0);
-
-        const diff = nextReset - now;
-
-        if (diff <= 0) {
-
-            btn.innerHTML = "Claim";
-            btn.disabled = false;
-
-            clearInterval(countdownInterval);
-            return;
-        }
-
-        const h = Math.floor(diff / (1000 * 60 * 60));
-        const m = Math.floor((diff / (1000 * 60)) % 60);
-        const s = Math.floor((diff / 1000) % 60);
-
-        btn.innerHTML = `⏳ ${h}h ${m}m ${s}s`;
-
-    }, 1000);
 }
 
 // ---------------- START ----------------
