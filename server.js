@@ -59,8 +59,8 @@ const orderSchema = new mongoose.Schema({
     status: { type: String, default: "Pending" },
     createdAt: { type: Date, default: Date.now }
 });
-const Order = mongoose.model("Order", orderSchema);
 
+const Order = mongoose.model("Order", orderSchema);
 const withdrawSchema = new mongoose.Schema({
     telegramId: String,
     wallet: String,
@@ -68,8 +68,8 @@ const withdrawSchema = new mongoose.Schema({
     status: { type: String, default: "Pending" },
     createdAt: { type: Date, default: Date.now }
 });
-const Withdraw = mongoose.model("Withdraw", withdrawSchema);
 
+const Withdraw = mongoose.model("Withdraw", withdrawSchema);
 // ---------------- LOGIN ----------------
 app.post("/login", async (req, res) => {
     try {
@@ -93,13 +93,18 @@ app.post("/login", async (req, res) => {
             }
         }
 
-        res.json({
-    telegramId: user.telegramId,
-    name: user.name,
-    points: user.points,
-    lastClaim: user.lastClaim,
-    referredBy: user.referredBy
-});
+        return res.json({
+            telegramId: user.telegramId,
+            name: user.name,
+            points: user.points,
+            lastClaim: user.lastClaim,
+            referredBy: user.referredBy
+        });
+
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+}); // ✅ THIS FIXES EVERYTHING
 
 // ---------------- DAILY ----------------
 app.post("/daily", async (req, res) => {
@@ -149,14 +154,10 @@ app.post("/withdraw", async (req, res) => {
     try {
         const { telegramId, wallet, points } = req.body;
 
-        const amount = Number(points); // 🔥 FIX
-
-        const user = await User.findOne({ telegramId });
-        if (!user) return res.json({ message: "User not found" });
-
-        if (user.points < amount) {
-            return res.json({ message: "Insufficient points" });
-        }
+        const amount = parseInt(points, 10);
+if (isNaN(amount) || amount <= 0) {
+    return res.json({ message: "Invalid points" });
+}
 
         await Withdraw.create({
             telegramId,
