@@ -106,48 +106,36 @@ app.post("/daily", async (req, res) => {
         const { telegramId } = req.body;
 
         const user = await User.findOne({ telegramId });
-        if (!user) return res.json({ 
-            message: "User not found",
-            user:null
-         });
-
-        const lastDay = new Date(user.lastClaim).toDateString();
-const nowDay = new Date().toDateString();
-
-if (lastDay === nowDay) {
-    return res.json({ message: "Already claimed today", user });
+        if (!user) {
+            return res.json({
+                message: "User not found",
+                user: null
+            });
         }
+
+        const now = new Date();
+
+        if (user.lastClaim) {
+            const lastDay = new Date(user.lastClaim).toDateString();
+            const nowDay = now.toDateString();
+
+            if (lastDay === nowDay) {
+                return res.json({
+                    message: "Already claimed today",
+                    user
+                });
+            }
         }
 
         user.points += 1000;
         user.lastClaim = now;
+
         await user.save();
 
-        res.json({ message: "Daily reward claimed", user });
-
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-// ---------------- BUY ----------------
-app.post("/buy", async (req, res) => {
-    try {
-        const { telegramId, product, price } = req.body;
-
-        const user = await User.findOne({ telegramId });
-        if (!user) return res.json({ message: "User not found" });
-
-        if (user.points < price) {
-            return res.json({ message: "Not enough points" });
-        }
-
-        user.points -= price;
-        await user.save();
-
-        await Order.create({ telegramId, product, price });
-
-        res.json({ message: "Order successful", user });
+        res.json({
+            message: "Daily reward claimed",
+            user
+        });
 
     } catch (err) {
         res.status(500).json({ error: err.message });
