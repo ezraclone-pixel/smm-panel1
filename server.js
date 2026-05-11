@@ -1,141 +1,129 @@
-const API_URL = "https://smm-panel1.onrender.com";
+const express = require("express");
+const mongoose = require("mongoose");
+const cors = require("cors");
+require("dotenv").config();
 
-const tg = window.Telegram.WebApp;
-tg.expand();
+const app = express();
 
-// ---------------- USER ID ----------------
-const userId = tg.initDataUnsafe?.user?.id?.toString() || "guest_user";
+// ---------------- MIDDLEWARE ----------------
+app.use(cors());
+app.use(express.json());
+app.use(express.static("public"));
 
-// ---------------- PAGE SWITCH ----------------
-function showPage(pageId, element) {
+// ---------------- HOME ----------------
+app.get("/", (req, res) => {
+    res.sendFile(__dirname + "/public/index.html");
+});
 
-    document.querySelectorAll(".page").forEach(page => {
-        page.classList.remove("active-page");
-    });
+// ---------------- MONGODB ----------------
+mongoose.connect(process.env.MONGO_URI)
+.then(() => console.log("MongoDB Connected"))
+.catch((err) => console.log(err));
 
-    document.getElementById(pageId).classList.add("active-page");
+// ---------------- USER MODEL ----------------
+const userSchema = new mongoose.Schema({
+    userId: String,
+    balance: {
+        type: Number,
+        default: 0
+    },
+    lastClaim: {
+        type: Date,
+        default: null
+    }
+});
 
-    document.querySelectorAll(".nav-item").forEach(item => {
-        item.classList.remove("active");
-    });
+const User = mongoose.model("User", userSchema);
 
-    element.classList.add("active");
-}
-
-// ---------------- LOAD USER ----------------
-async function loadUser() {
-
+// ---------------- GET USER ----------------
+app.post("/get-user", async (req, res) => {
     try {
 
-        const res = await fetch(`${API_URL}/get-user`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                userId
-            })
-        });
+        const { userId } = req.body;
 
-        const data = await res.json();
+        let user = await User.findOne({ userId });
 
-        if (data.success) {
-
-            document.querySelector(".balance-card h1").innerText =
-                data.balance;
-
+        if (!user) {
+            user = new User({ userId });
+            await user.save();
         }
+
+        res.json({
+            success: true,
+            balance: user.balance,
+            lastClaim: user.lastClaim
+        });
 
     } catch (err) {
 
-        console.log("Load User Error:", err);
+        res.json({
+            success: false,
+            message: "Server Error"
+        });
 
     }
-}
+});
 
 // ---------------- DAILY CLAIM ----------------
-const claimBtn = document.querySelector(".claim-btn");
-
-claimBtn.addEventListener("click", async () => {
+app.post("/daily-claim", async (req, res) => {
 
     try {
 
-        claimBtn.innerText = "Loading...";
-        claimBtn.disabled = true;
+        const { userId } = req.body;
 
-        const res = await fetch(`${API_URL}/daily-claim`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                userId
-            })
-        });
+        let user = await User.findOne({ userId });
 
-        const data = await res.json();
-
-        if (data.success) {
-
-            document.querySelector(".balance-card h1").innerText =
-                data.balance;
-
-            claimBtn.innerText = "Claimed";
-
-            alert("500 Points Added!");
-
-        } else {
-
-            alert(data.message || "Server Error");
-
-            claimBtn.innerText = "Claim";
-            claimBtn.disabled = false;
-
+        if (!user) {
+            user = new User({ userId });
         }
+
+        const now = new Date();
+
+        // 24 hours cooldown
+        if (user.lastClaim) {
+
+            const diff = now - user.lastClaim;
+            const hours24 = 24 * 60 * 60 * 1000;
+
+            if (diff < hours24) {
+
+                const remaining = hours24 - diff;
+
+                return res.json({
+                    success: false,
+                    message: "Already Claimed",
+                    remaining
+                });
+
+            }
+        }
+
+        // ADD 500 POINTS
+        user.balance += 500;
+        user.lastClaim = now;
+
+        await user.save();
+
+        res.json({
+            success: true,
+            message: "500 Points Added",
+            balance: user.balance
+        });
 
     } catch (err) {
 
-        console.log("Claim Error:", err);
-
-        alert("Server Error");
-
-        claimBtn.innerText = "Claim";
-        claimBtn.disabled = false;
+        res.json({
+            success: false,
+            message: "Server Error"
+        });
 
     }
 
 });
 
-// ---------------- COUNTDOWN ----------------
-function updateCountdown() {
+// ---------------- START SERVER ----------------
+const PORT = process.env.PORT || 3000;
 
-    const endDate = new Date("2026-12-31T23:59:59").getTime();
-
-    const now = new Date().getTime();
-
-    const distance = endDate - now;
-
-    const days = Math.floor(distance / (1000 * 60 * 60 * 24));
-
-    const hours = Math.floor(
-        (distance % (1000 * 60 * 60 * 24)) /
-        (1000 * 60 * 60)
-    );
-
-    const minutes = Math.floor(
-        (distance % (1000 * 60 * 60)) /
-        (1000 * 60)
-    );
-
-    const seconds = Math.floor(
-        (distance % (1000 * 60)) / 1000
-    );
-
-    document.getElementById("countdown").innerText =
-        `${days}D : ${hours}H : ${minutes}M : ${seconds}S`;
-}
-
-setInterval(updateCountdown, 1000);
-
-updateCountdown();
-loadUser();
+app.listen(PORT, () => {
+    console.log(`Server Running On Port ${PORT}`);
+});
