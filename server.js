@@ -16,17 +16,30 @@ app.get("/", (req, res) => {
 });
 
 // ---------------- MONGODB ----------------
-mongoose.connect(process.env.MONGO_URI)
-.then(() => console.log("MongoDB Connected"))
-.catch((err) => console.log(err));
+mongoose.connect(process.env.MONGO_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true
+})
+.then(() => {
+    console.log("MongoDB Connected");
+})
+.catch((err) => {
+    console.log("MongoDB Error:", err);
+});
 
 // ---------------- USER MODEL ----------------
 const userSchema = new mongoose.Schema({
-    userId: String,
+    userId: {
+        type: String,
+        required: true,
+        unique: true
+    },
+
     balance: {
         type: Number,
         default: 0
     },
+
     lastClaim: {
         type: Date,
         default: null
@@ -37,6 +50,7 @@ const User = mongoose.model("User", userSchema);
 
 // ---------------- GET USER ----------------
 app.post("/get-user", async (req, res) => {
+
     try {
 
         const { userId } = req.body;
@@ -44,7 +58,11 @@ app.post("/get-user", async (req, res) => {
         let user = await User.findOne({ userId });
 
         if (!user) {
-            user = new User({ userId });
+
+            user = new User({
+                userId
+            });
+
             await user.save();
         }
 
@@ -56,12 +74,15 @@ app.post("/get-user", async (req, res) => {
 
     } catch (err) {
 
+        console.log("GET USER ERROR:", err);
+
         res.json({
             success: false,
             message: "Server Error"
         });
 
     }
+
 });
 
 // ---------------- DAILY CLAIM ----------------
@@ -74,43 +95,47 @@ app.post("/daily-claim", async (req, res) => {
         let user = await User.findOne({ userId });
 
         if (!user) {
-            user = new User({ userId });
+
+            user = new User({
+                userId
+            });
         }
 
         const now = new Date();
 
-        // 24 hours cooldown
+        // 24 HOURS
         if (user.lastClaim) {
 
             const diff = now - user.lastClaim;
-            const hours24 = 24 * 60 * 60 * 1000;
 
-            if (diff < hours24) {
+            const cooldown = 24 * 60 * 60 * 1000;
 
-                const remaining = hours24 - diff;
+            if (diff < cooldown) {
 
                 return res.json({
                     success: false,
-                    message: "Already Claimed",
-                    remaining
+                    message: "Already Claimed Today"
                 });
 
             }
+
         }
 
         // ADD 500 POINTS
         user.balance += 500;
+
         user.lastClaim = now;
 
         await user.save();
 
         res.json({
             success: true,
-            message: "500 Points Added",
             balance: user.balance
         });
 
     } catch (err) {
+
+        console.log("CLAIM ERROR:", err);
 
         res.json({
             success: false,
