@@ -1,261 +1,139 @@
+const API_URL = "https://smm-panel1.onrender.com";
+
 const tg = window.Telegram.WebApp;
 tg.expand();
 
-const user = tg.initDataUnsafe?.user;
+// ---------------- USER ID ----------------
+const userId = tg.initDataUnsafe?.user?.id || "guest_user";
 
-// ---------------- API URL ----------------
-const API_URL = "https://smm-panel1.onrender.com";
+// ---------------- PAGE SWITCH ----------------
+function showPage(pageId, element) {
 
-// ---------------- CURRENT USER ----------------
-let currentUser = null;
+    document.querySelectorAll(".page").forEach(page => {
+        page.classList.remove("active-page");
+    });
 
-// ---------------- LOGIN + REFERRAL ----------------
-async function loginUser() {
+    document.getElementById(pageId).classList.add("active-page");
 
-    if (!user) {
-        alert("Open inside Telegram");
-        return;
-    }
+    document.querySelectorAll(".nav-item").forEach(item => {
+        item.classList.remove("active");
+    });
+
+    element.classList.add("active");
+}
+
+// ---------------- LOAD USER ----------------
+async function loadUser() {
 
     try {
 
-        const startParam =
-            tg.initDataUnsafe?.start_param || null;
-
-        const res = await fetch(`${API_URL}/login`, {
+        const res = await fetch(`${API_URL}/get-user`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
-                telegramId: user.id,
-                username: user.username || "",
-                firstName: user.first_name || "",
-                referralCode: startParam
+                userId
             })
         });
 
         const data = await res.json();
 
-        currentUser = data.user;
+        if (data.success) {
 
-        updateUI();
+            document.querySelector(".balance-card h1").innerText =
+                data.balance;
 
-        loadLeaderboard();
-
-        loadOrders();
-
-    } catch (err) {
-        console.log(err);
-        alert("Login failed");
-    }
-}
-
-// ---------------- UPDATE UI ----------------
-function updateUI() {
-
-    if (!currentUser) return;
-
-    document.getElementById("balance").innerText =
-        currentUser.balance || 0;
-
-    document.getElementById("walletBalance").innerText =
-        currentUser.balance || 0;
-}
-
-// ---------------- CLAIM DAILY ----------------
-async function claimDaily() {
-
-    if (!currentUser) return;
-
-    try {
-
-        const res = await fetch(`${API_URL}/daily`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                telegramId: currentUser.telegramId
-            })
-        });
-
-        const data = await res.json();
-
-        alert(data.message);
-
-        if (data.user) {
-            currentUser = data.user;
-            updateUI();
-        }
-
-        tg.HapticFeedback.notificationOccurred("success");
-
-    } catch (err) {
-        console.log(err);
-        alert("Claim failed");
-    }
-}
-
-// ---------------- BUY PRODUCT ----------------
-async function buyProduct(productName, price) {
-
-    if (!currentUser) return;
-
-    try {
-
-        const res = await fetch(`${API_URL}/buy`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                telegramId: currentUser.telegramId,
-                productName,
-                price
-            })
-        });
-
-        const data = await res.json();
-
-        alert(data.message);
-
-        if (data.user) {
-            currentUser = data.user;
-            updateUI();
-        }
-
-        loadOrders();
-
-    } catch (err) {
-        console.log(err);
-        alert("Purchase failed");
-    }
-}
-
-// ---------------- WITHDRAW ----------------
-async function withdraw() {
-
-    if (!currentUser) return;
-
-    const amount = prompt("Enter amount");
-
-    if (!amount) return;
-
-    try {
-
-        const res = await fetch(`${API_URL}/withdraw`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                telegramId: currentUser.telegramId,
-                amount
-            })
-        });
-
-        const data = await res.json();
-
-        alert(data.message);
-
-        if (data.user) {
-            currentUser = data.user;
-            updateUI();
         }
 
     } catch (err) {
+
         console.log(err);
-        alert("Withdraw failed");
+
     }
 }
 
-// ---------------- INVITE FRIENDS ----------------
-function inviteFriends() {
+// ---------------- DAILY CLAIM ----------------
+const claimBtn = document.querySelector(".claim-btn");
 
-    if (!currentUser) return;
+claimBtn.addEventListener("click", async () => {
 
-    const botUsername = "Myatt_205bot";
+    try {
 
-    const inviteLink =
-        `https://t.me/${botUsername}?start=${currentUser.telegramId}`;
+        claimBtn.innerText = "Loading...";
+        claimBtn.disabled = true;
 
-    const text =
-        encodeURIComponent(
-            `Join Myat Digital Shop & earn rewards!\n${inviteLink}`
-        );
+        const res = await fetch(`${API_URL}/daily-claim`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                userId
+            })
+        });
 
-    window.open(
-        `https://t.me/share/url?url=${inviteLink}&text=${text}`,
-        "_blank"
+        const data = await res.json();
+
+        if (data.success) {
+
+            document.querySelector(".balance-card h1").innerText =
+                data.balance;
+
+            claimBtn.innerText = "Claimed";
+
+            alert("500 Points Added!");
+
+        } else {
+
+            alert(data.message);
+
+            claimBtn.innerText = "Claim";
+            claimBtn.disabled = false;
+
+        }
+
+    } catch (err) {
+
+        console.log(err);
+
+        claimBtn.innerText = "Claim";
+        claimBtn.disabled = false;
+
+    }
+
+});
+
+// ---------------- COUNTDOWN ----------------
+function updateCountdown() {
+
+    const endDate = new Date("2026-12-31T23:59:59").getTime();
+
+    const now = new Date().getTime();
+
+    const distance = endDate - now;
+
+    const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+
+    const hours = Math.floor(
+        (distance % (1000 * 60 * 60 * 24)) /
+        (1000 * 60 * 60)
     );
+
+    const minutes = Math.floor(
+        (distance % (1000 * 60 * 60)) /
+        (1000 * 60)
+    );
+
+    const seconds = Math.floor(
+        (distance % (1000 * 60)) / 1000
+    );
+
+    document.getElementById("countdown").innerText =
+        `${days}D : ${hours}H : ${minutes}M : ${seconds}S`;
 }
 
-// ---------------- LOAD LEADERBOARD ----------------
-async function loadLeaderboard() {
+setInterval(updateCountdown, 1000);
 
-    try {
-
-        const res = await fetch(`${API_URL}/leaderboard`);
-
-        const data = await res.json();
-
-        const board =
-            document.getElementById("leaderboardData");
-
-        board.innerHTML = "";
-
-        data.forEach((u, index) => {
-
-            board.innerHTML += `
-                <div style="margin-bottom:10px;">
-                    ${index + 1}. ${u.firstName} - ${u.balance} Coins
-                </div>
-            `;
-        });
-
-    } catch (err) {
-        console.log(err);
-    }
-}
-
-// ---------------- LOAD ORDERS ----------------
-async function loadOrders() {
-
-    if (!currentUser) return;
-
-    try {
-
-        const res = await fetch(
-            `${API_URL}/orders/${currentUser.telegramId}`
-        );
-
-        const data = await res.json();
-
-        const ordersDiv =
-            document.getElementById("ordersData");
-
-        if (!data.length) {
-            ordersDiv.innerHTML = "No orders yet";
-            return;
-        }
-
-        ordersDiv.innerHTML = "";
-
-        data.forEach(order => {
-
-            ordersDiv.innerHTML += `
-                <div style="margin-bottom:10px;padding:10px;background:#334155;border-radius:10px;">
-                    <b>${order.productName}</b><br>
-                    ${order.price} Coins
-                </div>
-            `;
-        });
-
-    } catch (err) {
-        console.log(err);
-    }
-}
-
-// ---------------- START ----------------
-loginUser();
+updateCountdown();
+loadUser();
