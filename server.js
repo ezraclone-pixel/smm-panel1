@@ -106,20 +106,17 @@ app.post("/daily", async (req, res) => {
         const { telegramId } = req.body;
 
         const user = await User.findOne({ telegramId });
-        if (!user) return res.json({ message: "User not found" });
+        if (!user) return res.json({ 
+            message: "User not found",
+            user:null
+         });
 
-        const now = new Date();
+        const lastDay = new Date(user.lastClaim).toDateString();
+const nowDay = new Date().toDateString();
 
-        if (user.lastClaim) {
-            const last = new Date(user.lastClaim);
-
-            if (
-                last.getDate() === now.getDate() &&
-                last.getMonth() === now.getMonth() &&
-                last.getFullYear() === now.getFullYear()
-            ) {
-                return res.json({ message: "Already claimed today" });
-            }
+if (lastDay === nowDay) {
+    return res.json({ message: "Already claimed today", user });
+        }
         }
 
         user.points += 1000;
