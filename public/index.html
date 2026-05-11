@@ -1,254 +1,224 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Myat Digital Shop</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Myat Digital Shop</title>
 
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
-<style>
-/* ---------------- BASE ---------------- */
-body {
-  margin:0;
-  font-family:-apple-system,system-ui,sans-serif;
-  background: radial-gradient(circle at top,#0b0f14,#050608);
-  color:#fff;
-}
+    <style>
+        *{
+            margin:0;
+            padding:0;
+            box-sizing:border-box;
+            font-family:Arial, sans-serif;
+        }
 
-body::before {
-  content:"";
-  position:fixed;
-  width:100%;
-  height:100%;
-  background:
-    radial-gradient(circle at 20% 20%, rgba(0,136,204,0.12), transparent 40%),
-    radial-gradient(circle at 80% 80%, rgba(255,215,0,0.06), transparent 40%);
-  z-index:-1;
-}
+        body{
+            background:#0f172a;
+            color:white;
+            padding-bottom:80px;
+        }
 
-/* ---------------- PAGE ---------------- */
-.page {
-  display:none;
-  min-height:100vh;
-  padding:20px;
-  padding-bottom:120px;
-}
+        .page{
+            display:none;
+            padding:20px;
+        }
 
-.active-page {
-  display:flex;
-  flex-direction:column;
-}
+        .active{
+            display:block;
+        }
 
-/* ---------------- CARD ---------------- */
-.card {
-  background:rgba(255,255,255,0.04);
-  border:1px solid rgba(255,255,255,0.08);
-  backdrop-filter:blur(15px);
-  border-radius:18px;
-  padding:16px;
-  margin:10px 0;
-}
+        h1{
+            font-size:24px;
+            margin-bottom:15px;
+        }
 
-/* ---------------- SMALL PREMIUM BUTTON ---------------- */
-.small-btn {
-  padding:6px 12px;
-  font-size:11px;
-  border-radius:999px;
-  border:1px solid rgba(255,255,255,0.12);
-  background:rgba(255,255,255,0.06);
-  color:#fff;
-  font-weight:600;
-  transition:0.2s;
-}
+        .card{
+            background:#1e293b;
+            padding:15px;
+            border-radius:14px;
+            margin-bottom:15px;
+        }
 
-.small-btn:active {
-  transform:scale(0.92);
-}
+        button{
+            width:100%;
+            border:none;
+            padding:12px;
+            border-radius:12px;
+            background:#2563eb;
+            color:white;
+            font-size:16px;
+            cursor:pointer;
+            margin-top:10px;
+        }
 
-.small-btn.gold {
-  background:linear-gradient(135deg,#ffd700,#ffb300);
-  color:#000;
-  border:none;
-}
+        .bottom-nav{
+            position:fixed;
+            bottom:0;
+            left:0;
+            width:100%;
+            height:65px;
+            background:#111827;
+            display:flex;
+            justify-content:space-around;
+            align-items:center;
+            border-top:1px solid #1f2937;
+        }
 
-/* ---------------- TASK BOX ---------------- */
-.task-box {
-  background:rgba(255,255,255,0.03);
-  border:1px solid rgba(255,255,255,0.06);
-  border-radius:14px;
-  padding:12px;
-  margin:10px 0;
+        .nav-btn{
+            color:#94a3b8;
+            font-size:14px;
+            cursor:pointer;
+        }
 
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-}
+        .nav-btn.active{
+            color:white;
+            font-weight:bold;
+        }
 
-/* ---------------- NAV ---------------- */
-.bottom-nav {
-  position:fixed;
-  bottom:10px;
-  left:10px;
-  right:10px;
-  height:65px;
-  background:rgba(10,10,15,0.85);
-  backdrop-filter:blur(18px);
-  border-radius:18px;
-  display:flex;
-  justify-content:space-around;
-  align-items:center;
-  border:1px solid rgba(255,255,255,0.08);
-}
+        .balance{
+            font-size:28px;
+            font-weight:bold;
+            margin-top:10px;
+        }
 
-.nav-item {
-  flex:1;
-  text-align:center;
-  color:#777;
-  font-size:10px;
-}
-
-.nav-item i {
-  display:block;
-  font-size:18px;
-  margin-bottom:3px;
-}
-
-.nav-item.active {
-  color:#fff;
-}
-
-.nav-item.active i {
-  color:#ffd700;
-}
-</style>
-
+        .product{
+            background:#334155;
+            padding:12px;
+            border-radius:12px;
+            margin-top:10px;
+        }
+    </style>
 </head>
-
 <body>
 
-<!-- 🏠 HOME -->
-<div id="home" class="page active-page">
+    <!-- HOME -->
+    <div class="page active" id="home">
+        <h1>🏠 Home</h1>
 
-  <div class="card">
-    <h2>👋 Welcome</h2>
-    <p>Myat Digital Shop</p>
-  </div>
+        <div class="card">
+            <p>Balance</p>
+            <div class="balance" id="balance">0</div>
 
-  <div class="card">
-    <h3>Balance</h3>
-    <p>Points: <span class="balance">0</span></p>
-  </div>
+            <button onclick="claimDaily()">
+                🎁 Claim Daily Reward
+            </button>
+        </div>
 
-  <!-- 🎮 GAME AREA -->
-  <div class="card">
-    <h3>🎮 Game Zone</h3>
-    <p>Play & earn coming system</p>
+        <div class="card">
+            <p>Invite Friends & Earn</p>
 
-    <button class="small-btn gold" onclick="startGame()">
-      Start Game
-    </button>
-  </div>
-
-</div>
-
-<!-- ⚡ TASK -->
-<div id="task" class="page">
-  <div class="card">
-    <h3>⚡ Earn Tasks</h3>
-
-    <div class="task-box">
-      <span><i class="fas fa-calendar-check" style="color:#ffd700;"></i> Daily Reward</span>
-      <button class="small-btn gold" onclick="claimDaily()">Claim</button>
+            <button onclick="inviteFriends()">
+                👥 Invite
+            </button>
+        </div>
     </div>
 
-    <div class="task-box">
-      <span><i class="fas fa-user-friends" style="color:#00d4ff;"></i> Referral</span>
-      <button class="small-btn" onclick="inviteFriends()">Invite</button>
+    <!-- SHOP -->
+    <div class="page" id="shop">
+        <h1>🛒 Shop</h1>
+
+        <div class="product">
+            <h3>Facebook Followers</h3>
+            <p>1000 Followers</p>
+
+            <button onclick="buyProduct('Facebook Followers',100)">
+                Buy - 100 Coins
+            </button>
+        </div>
+
+        <div class="product">
+            <h3>TikTok Likes</h3>
+            <p>500 Likes</p>
+
+            <button onclick="buyProduct('TikTok Likes',50)">
+                Buy - 50 Coins
+            </button>
+        </div>
     </div>
 
-    <div class="task-box">
-      <span><i class="fab fa-telegram" style="color:#0088cc;"></i> Channel</span>
-      <button class="small-btn" onclick="window.open('https://t.me/Myatt_205bot')">Join</button>
+    <!-- LEADERBOARD -->
+    <div class="page" id="leaderboard">
+        <h1>🏆 Leaderboard</h1>
+
+        <div class="card" id="leaderboardData">
+            Loading...
+        </div>
     </div>
 
-    <div class="task-box" style="border:1px solid rgba(255,215,0,0.3);">
-      <span><i class="fas fa-gamepad" style="color:#ffd700;"></i> Play Game</span>
-      <button class="small-btn gold" onclick="goHomeGame()">Play</button>
+    <!-- WALLET -->
+    <div class="page" id="wallet">
+        <h1>💰 Wallet</h1>
+
+        <div class="card">
+            <p>Your Balance</p>
+
+            <div class="balance" id="walletBalance">
+                0
+            </div>
+
+            <button onclick="withdraw()">
+                Withdraw
+            </button>
+        </div>
     </div>
 
-  </div>
-</div>
+    <!-- ORDERS -->
+    <div class="page" id="orders">
+        <h1>📦 Orders</h1>
 
-<!-- 🏆 LEADERBOARD -->
-<div id="leaderboard" class="page">
-  <div class="card">
-    <h3>🏆 Leaderboard</h3>
-    <p>Top players ranking</p>
-  </div>
-</div>
+        <div class="card" id="ordersData">
+            No orders yet
+        </div>
+    </div>
 
-<!-- 💰 WALLET -->
-<div id="wallet" class="page">
-  <div class="card">
-    <h3>💰 Wallet</h3>
-    <p>Balance: <span id="balance">0</span></p>
+    <!-- BOTTOM NAV -->
+    <div class="bottom-nav">
 
-    <button class="small-btn gold" onclick="withdraw()">Withdraw</button>
-  </div>
-</div>
+        <div class="nav-btn active" onclick="showPage('home',this)">
+            Home
+        </div>
 
-<!-- 📱 NAV -->
-<div class="bottom-nav">
+        <div class="nav-btn" onclick="showPage('shop',this)">
+            Shop
+        </div>
 
-  <div class="nav-item active" onclick="showPage('home', this)">
-    <i class="fas fa-home"></i>
-    Home
-  </div>
+        <div class="nav-btn" onclick="showPage('leaderboard',this)">
+            Top
+        </div>
 
-  <div class="nav-item" onclick="showPage('task', this)">
-    <i class="fas fa-bolt"></i>
-    Task
-  </div>
+        <div class="nav-btn" onclick="showPage('wallet',this)">
+            Wallet
+        </div>
 
-  <div class="nav-item" onclick="showPage('leaderboard', this)">
-    <i class="fas fa-trophy"></i>
-    Rank
-  </div>
+        <div class="nav-btn" onclick="showPage('orders',this)">
+            Orders
+        </div>
 
-  <div class="nav-item" onclick="showPage('wallet', this)">
-    <i class="fas fa-wallet"></i>
-    Wallet
-  </div>
+    </div>
 
-</div>
+    <script src="app.js"></script>
 
-<script src="app.js"></script>
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
 
-<script>
-function showPage(id, el){
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active-page'));
-  document.getElementById(id).classList.add('active-page');
+        function showPage(pageId, el){
 
-  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-  el.classList.add('active');
+            document.querySelectorAll(".page")
+                .forEach(page => page.classList.remove("active"));
 
-  if(window.Telegram?.WebApp){
-    Telegram.WebApp.HapticFeedback.impactOccurred('medium');
-  }
-}
+            document.getElementById(pageId)
+                .classList.add("active");
 
-/* Play game → home */
-function goHomeGame(){
-  showPage('home', document.querySelectorAll('.nav-item')[0]);
-}
+            document.querySelectorAll(".nav-btn")
+                .forEach(btn => btn.classList.remove("active"));
 
-/* game start */
-function startGame(){
-  alert("Game coming soon 🚀");
-}
-</script>
+            el.classList.add("active");
+        }
+    </script>
 
 </body>
 </html>
