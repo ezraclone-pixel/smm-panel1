@@ -93,11 +93,12 @@ app.post("/login", async (req, res) => {
             }
         }
 
-        res.json(user);
-
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
+        res.json({
+    telegramId: user.telegramId,
+    name: user.name,
+    points: user.points,
+    lastClaim: user.lastClaim,
+    referredBy: user.referredBy
 });
 
 // ---------------- DAILY ----------------
