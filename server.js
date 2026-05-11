@@ -256,19 +256,79 @@ app.post("/withdraw", async (req, res) => {
             });
         }
 
-        user.points -= points;
-
-        await user.save();
-
+        // ✅ CREATE PENDING REQUEST ONLY
         await Withdraw.create({
             telegramId,
             wallet,
-            points
+            points,
+            status: "Pending"
         });
 
         res.json({
-            message: "Withdraw submitted",
-            user
+            message: "Withdraw request submitted"
+        });
+
+    } catch (err) {
+
+        res.status(500).json({
+            error: err.message
+        });
+    }
+});
+// ---------------- APPROVE WITHDRAW ----------------
+app.post("/approve-withdraw", async (req, res) => {
+
+    try {
+
+        const { withdrawId } = req.body;
+
+        const withdraw =
+            await Withdraw.findById(withdrawId);
+
+        if (!withdraw) {
+
+            return res.json({
+                message: "Withdraw not found"
+            });
+        }
+
+        if (withdraw.status === "Approved") {
+
+            return res.json({
+                message: "Already approved"
+            });
+        }
+
+        const user =
+            await User.findOne({
+                telegramId: withdraw.telegramId
+            });
+
+        if (!user) {
+
+            return res.json({
+                message: "User not found"
+            });
+        }
+
+        if (user.points < withdraw.points) {
+
+            return res.json({
+                message: "Insufficient user points"
+            });
+        }
+
+        // ✅ NOW REMOVE POINTS
+        user.points -= withdraw.points;
+
+        await user.save();
+
+        withdraw.status = "Approved";
+
+        await withdraw.save();
+
+        res.json({
+            message: "Withdraw approved"
         });
 
     } catch (err) {
