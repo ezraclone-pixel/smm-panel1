@@ -136,45 +136,44 @@ app.post("/daily", async (req, res) => {
         const user = await User.findOne({ telegramId });
 
         if (!user) {
-            return res.json({
-                message: "User not found"
-            });
+            return res.json({ message: "User not found" });
         }
 
         const now = new Date();
 
-        if (user.lastClaim) {
+        // 🌙 MIDNIGHT RESET CHECK
+        const last = user.lastClaim;
 
-            const diff =
-                now - new Date(user.lastClaim);
+        if (last) {
+            const lastDate = new Date(last);
 
-            const hours =
-                diff / (1000 * 60 * 60);
-
-            if (hours < 24) {
-
+            if (
+                lastDate.getDate() === now.getDate() &&
+                lastDate.getMonth() === now.getMonth() &&
+                lastDate.getFullYear() === now.getFullYear()
+            ) {
                 return res.json({
-                    message: "Already claimed today"
+                    message: "Already claimed today",
+                    alreadyClaimed: true,
+                    user
                 });
             }
         }
 
+        // 💰 REWARD
         user.points += 1000;
-
         user.lastClaim = now;
 
         await user.save();
 
         res.json({
             message: "Daily reward claimed",
+            alreadyClaimed: false,
             user
         });
 
     } catch (err) {
-
-        res.status(500).json({
-            error: err.message
-        });
+        res.status(500).json({ error: err.message });
     }
 });
 
