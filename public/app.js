@@ -51,21 +51,23 @@ function updateUI() {
 
     if (!currentUser) return;
 
+    // username
     const username =
         document.getElementById("username");
-
-    const points =
-        document.getElementById("points");
 
     if (username) {
         username.innerText =
             currentUser.name || "User";
     }
 
-    if (points) {
-        points.innerText =
+    // FIXED BALANCE UPDATE
+    const balanceElements =
+        document.querySelectorAll("#balance");
+
+    balanceElements.forEach(el => {
+        el.innerText =
             currentUser.points || 0;
-    }
+    });
 }
 
 // ---------------- DAILY CLAIM ----------------
@@ -94,6 +96,11 @@ async function claimDaily() {
             currentUser = data.user;
 
             updateUI();
+
+            // Telegram haptic
+            if (window.Telegram?.WebApp) {
+                Telegram.WebApp.HapticFeedback.notificationOccurred("success");
+            }
         }
 
     } catch (err) {
@@ -161,9 +168,19 @@ async function buyProduct(product, price) {
 }
 
 // ---------------- WITHDRAW ----------------
-async function withdraw(points, wallet) {
+async function withdraw() {
 
     if (!currentUser) return;
+
+    const wallet =
+        prompt("Enter wallet address");
+
+    if (!wallet) return;
+
+    const points =
+        prompt("Enter withdraw points");
+
+    if (!points) return;
 
     try {
 
@@ -213,18 +230,25 @@ async function loadLeaderboard() {
 
         if (!leaderboard) return;
 
-        leaderboard.innerHTML = "";
+        let html = `
+            <div class="card">
+                <h3>🏆 Leaderboard</h3>
+            </div>
+        `;
 
         users.forEach((u, index) => {
 
-            leaderboard.innerHTML += `
-                <div class="leaderboard-item">
-                    <span>#${index + 1}</span>
-                    <span>${u.name}</span>
-                    <span>${u.points}</span>
+            html += `
+                <div class="card">
+                    <div class="task-box">
+                        <span>#${index + 1} ${u.name}</span>
+                        <span>${u.points} pts</span>
+                    </div>
                 </div>
             `;
         });
+
+        leaderboard.innerHTML = html;
 
     } catch (err) {
 
@@ -235,3 +259,4 @@ async function loadLeaderboard() {
 // ---------------- START ----------------
 login();
 loadLeaderboard();
+
