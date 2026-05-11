@@ -18,18 +18,22 @@ app.get("/", (req, res) => {
 // ---------------- MONGODB ----------------
 mongoose.connect(process.env.MONGO_URI)
 .then(() => {
+
     console.log("MongoDB Connected");
 
-    // SERVER START should be HERE
-    const PORT = process.env.PORT || 3000;
+    const PORT = process.env.PORT;
+
+mongoose.connect(process.env.MONGO_URI)
+.then(() => {
+    console.log("MongoDB Connected");
 
     app.listen(PORT, () => {
-        console.log(`Server Running On Port ${PORT}`);
+        console.log("Server Running On " + PORT);
     });
 
 })
-.catch((err) => {
-    console.log("MongoDB Error:", err);
+.catch(err => {
+    console.log("Mongo Error:", err);
 });
 
 // ---------------- USER MODEL ----------------
