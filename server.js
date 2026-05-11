@@ -11,7 +11,7 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static("public"));
 
-// HOME
+// ---------------- HOME ----------------
 app.get("/", (req, res) => {
     res.sendFile(__dirname + "/public/index.html");
 });
@@ -27,14 +27,14 @@ const bot = new Telegraf(process.env.BOT_TOKEN);
 bot.start((ctx) => {
     ctx.reply("👋 Welcome!", {
         reply_markup: {
-            inline_keyboard: [
-                [{
+            inline_keyboard: [[
+                {
                     text: "🚀 Open App",
                     web_app: {
-                        url: "https://smm-panel1.onrender.com"
+                        url: process.env.WEBAPP_URL
                     }
-                }]
-            ]
+                }
+            ]]
         }
     });
 });
@@ -50,17 +50,9 @@ const userSchema = new mongoose.Schema({
     referredBy: { type: String, default: null },
     lastClaim: { type: Date, default: null }
 });
+
 const User = mongoose.model("User", userSchema);
 
-const orderSchema = new mongoose.Schema({
-    telegramId: String,
-    product: String,
-    price: Number,
-    status: { type: String, default: "Pending" },
-    createdAt: { type: Date, default: Date.now }
-});
-
-const Order = mongoose.model("Order", orderSchema);
 const withdrawSchema = new mongoose.Schema({
     telegramId: String,
     wallet: String,
@@ -70,6 +62,7 @@ const withdrawSchema = new mongoose.Schema({
 });
 
 const Withdraw = mongoose.model("Withdraw", withdrawSchema);
+
 // ---------------- LOGIN ----------------
 app.post("/login", async (req, res) => {
     try {
@@ -93,18 +86,12 @@ app.post("/login", async (req, res) => {
             }
         }
 
-        return res.json({
-            telegramId: user.telegramId,
-            name: user.name,
-            points: user.points,
-            lastClaim: user.lastClaim,
-            referredBy: user.referredBy
-        });
+        res.json(user);
 
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
-}); // ✅ THIS FIXES EVERYTHING
+});
 
 // ---------------- DAILY ----------------
 app.post("/daily", async (req, res) => {
@@ -112,34 +99,27 @@ app.post("/daily", async (req, res) => {
         const { telegramId } = req.body;
 
         const user = await User.findOne({ telegramId });
-        if (!user) {
-            return res.json({ message: "User not found", user: null });
-        }
+        if (!user) return res.json({ message: "User not found" });
 
         const now = new Date();
+        const last = user.lastClaim ? new Date(user.lastClaim) : null;
 
-        // safe date compare (UTC-based, no timezone bug)
-        const isSameDay = (d1, d2) => {
-            return (
-                d1.getUTCFullYear() === d2.getUTCFullYear() &&
-                d1.getUTCMonth() === d2.getUTCMonth() &&
-                d1.getUTCDate() === d2.getUTCDate()
-            );
-        };
+        const claimedToday =
+            last && last.toDateString() === now.toDateString();
 
-        if (user.lastClaim && isSameDay(new Date(user.lastClaim), now)) {
+        if (claimedToday) {
             return res.json({
                 message: "Already claimed today",
                 user
             });
         }
 
-        user.points = (user.points || 0) + 1000;
+        user.points += 1000;
         user.lastClaim = now;
 
         await user.save();
 
-        return res.json({
+        res.json({
             message: "Daily reward claimed",
             user
         });
@@ -154,16 +134,16 @@ app.post("/withdraw", async (req, res) => {
     try {
         const { telegramId, wallet, points } = req.body;
 
-        const amount = parseInt(points, 10);
-if (isNaN(amount) || amount <= 0) {
-    return res.json({ message: "Invalid points" });
-}
+        const amount = parseInt(points);
+
+        if (!amount || amount <= 0) {
+            return res.json({ message: "Invalid points" });
+        }
 
         await Withdraw.create({
             telegramId,
             wallet,
-            points: amount,
-            status: "Pending"
+            points: amount
         });
 
         res.json({ message: "Withdraw request submitted" });
@@ -172,21 +152,16 @@ if (isNaN(amount) || amount <= 0) {
         res.status(500).json({ error: err.message });
     }
 });
-// ---------------- GET WITHDRAW LIST (ADMIN) ----------------
+
+// ---------------- WITHDRAW LIST ----------------
 app.get("/withdraws", async (req, res) => {
-    try {
-        const data = await Withdraw.find().sort({ createdAt: -1 });
-        res.json(data);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
+    const data = await Withdraw.find().sort({ createdAt: -1 });
+    res.json(data);
 });
 
-// ---------------- APPROVE WITHDRAW (ADMIN SECURE) ----------------
+// ---------------- APPROVE WITHDRAW ----------------
 app.post("/approve-withdraw", async (req, res) => {
     try {
-
-        // 🔐 SIMPLE ADMIN KEY CHECK
         const { adminKey, withdrawId } = req.body;
 
         if (adminKey !== process.env.ADMIN_KEY) {
@@ -195,10 +170,6 @@ app.post("/approve-withdraw", async (req, res) => {
 
         const w = await Withdraw.findById(withdrawId);
         if (!w) return res.json({ message: "Not found" });
-
-        if (w.status === "Approved") {
-            return res.json({ message: "Already approved" });
-        }
 
         const user = await User.findOne({ telegramId: w.telegramId });
         if (!user) return res.json({ message: "User not found" });
@@ -213,7 +184,7 @@ app.post("/approve-withdraw", async (req, res) => {
         w.status = "Approved";
         await w.save();
 
-        res.json({ message: "Withdraw approved" });
+        res.json({ message: "Approved" });
 
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -222,15 +193,12 @@ app.post("/approve-withdraw", async (req, res) => {
 
 // ---------------- LEADERBOARD ----------------
 app.get("/leaderboard", async (req, res) => {
-    try {
-        const users = await User.find({})
-    .select("name points telegramId")
-    .sort({ points: -1 })
-    .limit(20);
-        res.json(users);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
+    const users = await User.find({})
+        .select("name points")
+        .sort({ points: -1 })
+        .limit(20);
+
+    res.json(users);
 });
 
 // ---------------- START ----------------
