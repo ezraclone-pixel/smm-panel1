@@ -4,7 +4,7 @@ const tg = window.Telegram.WebApp;
 tg.expand();
 
 // ---------------- USER ID ----------------
-const userId = tg.initDataUnsafe?.user?.id || "guest_user";
+const userId = tg.initDataUnsafe?.user?.id?.toString() || "guest_user";
 
 // ---------------- PAGE SWITCH ----------------
 function showPage(pageId, element) {
@@ -48,7 +48,7 @@ async function loadUser() {
 
     } catch (err) {
 
-        console.log(err);
+        console.log("Load User Error:", err);
 
     }
 }
@@ -86,7 +86,7 @@ claimBtn.addEventListener("click", async () => {
 
         } else {
 
-            alert(data.message);
+            alert(data.message || "Server Error");
 
             claimBtn.innerText = "Claim";
             claimBtn.disabled = false;
@@ -95,7 +95,9 @@ claimBtn.addEventListener("click", async () => {
 
     } catch (err) {
 
-        console.log(err);
+        console.log("Claim Error:", err);
+
+        alert("Server Error");
 
         claimBtn.innerText = "Claim";
         claimBtn.disabled = false;
