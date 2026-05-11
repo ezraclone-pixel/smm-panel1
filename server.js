@@ -107,32 +107,33 @@ app.post("/daily", async (req, res) => {
 
         const user = await User.findOne({ telegramId });
         if (!user) {
-            return res.json({
-                message: "User not found",
-                user: null
-            });
+            return res.json({ message: "User not found", user: null });
         }
 
         const now = new Date();
 
-        if (user.lastClaim) {
-            const lastDay = new Date(user.lastClaim).toDateString();
-            const nowDay = now.toDateString();
+        // safe date compare (UTC-based, no timezone bug)
+        const isSameDay = (d1, d2) => {
+            return (
+                d1.getUTCFullYear() === d2.getUTCFullYear() &&
+                d1.getUTCMonth() === d2.getUTCMonth() &&
+                d1.getUTCDate() === d2.getUTCDate()
+            );
+        };
 
-            if (lastDay === nowDay) {
-                return res.json({
-                    message: "Already claimed today",
-                    user
-                });
-            }
+        if (user.lastClaim && isSameDay(new Date(user.lastClaim), now)) {
+            return res.json({
+                message: "Already claimed today",
+                user
+            });
         }
 
-        user.points += 1000;
+        user.points = (user.points || 0) + 1000;
         user.lastClaim = now;
 
         await user.save();
 
-        res.json({
+        return res.json({
             message: "Daily reward claimed",
             user
         });
@@ -147,17 +148,19 @@ app.post("/withdraw", async (req, res) => {
     try {
         const { telegramId, wallet, points } = req.body;
 
+        const amount = Number(points); // 🔥 FIX
+
         const user = await User.findOne({ telegramId });
         if (!user) return res.json({ message: "User not found" });
 
-        if (user.points < points) {
+        if (user.points < amount) {
             return res.json({ message: "Insufficient points" });
         }
 
         await Withdraw.create({
             telegramId,
             wallet,
-            points,
+            points: amount,
             status: "Pending"
         });
 
@@ -167,7 +170,6 @@ app.post("/withdraw", async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 });
-
 // ---------------- GET WITHDRAW LIST (ADMIN) ----------------
 app.get("/withdraws", async (req, res) => {
     try {
@@ -219,10 +221,10 @@ app.post("/approve-withdraw", async (req, res) => {
 // ---------------- LEADERBOARD ----------------
 app.get("/leaderboard", async (req, res) => {
     try {
-        const users = await User.find()
-            .sort({ points: -1 })
-            .limit(20);
-
+        const users = await User.find({})
+    .select("name points telegramId")
+    .sort({ points: -1 })
+    .limit(20);
         res.json(users);
     } catch (err) {
         res.status(500).json({ error: err.message });
